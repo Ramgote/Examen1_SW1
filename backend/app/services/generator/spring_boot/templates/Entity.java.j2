@@ -1,0 +1,46 @@
+package com.generated.entity;
+
+import jakarta.persistence.*;
+import java.util.Set;
+import java.util.LinkedHashSet;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "{{ c.table }}")
+{% if not c.parent %}
+@Inheritance(strategy = InheritanceType.JOINED)
+{% endif %}
+public {% if c.abstract %}abstract {% endif %}class {{ c.name }}{% if c.parent %} extends {{ c.parent.name }}{% endif %} {
+{% if not c.parent %}
+    @Version
+    private Long entityVersion;
+    public Long getEntityVersion() { return entityVersion; }
+{% endif %}
+{% for a in c.attrs %}
+{% if a.pk %}
+    @Id
+{% if a.generated %}
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+{% endif %}
+{% endif %}
+    @Column(name = "{{ a.column }}", nullable = {{ 'true' if a.nullable else 'false' }}, unique = {{ 'true' if a.unique else 'false' }}{% if a.text %}, columnDefinition = "text"{% endif %})
+    private {{ a.type }} {{ a.name }};
+    public {{ a.type }} get{{ a.cap }}() { return {{ a.name }}; }
+    public void set{{ a.cap }}({{ a.type }} value) { this.{{ a.name }} = value; }
+{% endfor %}
+{% for r in c.rels %}
+    @{{ r.kind }}({% if not r.owner %}mappedBy = "{{ r.inverse }}", {% endif %}fetch = FetchType.LAZY{% if r.composition %}, cascade = CascadeType.REMOVE{% endif %}{% if not r.many and r.owner %}, optional = {{ 'false' if r.min else 'true' }}{% endif %})
+{% if r.owner %}
+{% if r.many %}
+    @JoinTable(name = "{{ r.join }}", joinColumns = @JoinColumn(name = "owner_id"), inverseJoinColumns = @JoinColumn(name = "target_id"))
+{% else %}
+    @JoinColumn(name = "{{ r.column }}", nullable = {{ 'false' if r.min else 'true' }}, unique = {{ 'true' if r.kind == 'OneToOne' else 'false' }})
+{% endif %}
+{% endif %}
+    private {% if r.many %}Set<{{ r.other }}>{% else %}{{ r.other }}{% endif %} {{ r.name }}{% if r.many %} = new LinkedHashSet<>(){% endif %};
+    public {% if r.many %}Set<{{ r.other }}>{% else %}{{ r.other }}{% endif %} get{{ r.cap }}() { return {{ r.name }}; }
+    public void set{{ r.cap }}({% if r.many %}Set<{{ r.other }}>{% else %}{{ r.other }}{% endif %} value) { this.{{ r.name }} = value; }
+{% endfor %}
+}

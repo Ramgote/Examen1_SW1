@@ -1,0 +1,35 @@
+# Independent test environment. Does not restart the platform or the old demo.
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: generated_db
+      POSTGRES_USER: generated
+      POSTGRES_PASSWORD: ${SPRINT8_DB_PASSWORD:?Set SPRINT8_DB_PASSWORD}
+    volumes:
+      - sprint8_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U generated -d generated_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  api:
+    image: maven:3.9-eclipse-temurin-21
+    working_dir: /workspace
+    volumes:
+      - ./exports/sprint-8-cliente-pedido:/workspace
+      - sprint8_maven:/root/.m2
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/generated_db
+      DB_USER: generated
+      DB_PASSWORD: ${SPRINT8_DB_PASSWORD:?Set SPRINT8_DB_PASSWORD}
+      DDL_AUTO: update
+    ports:
+      - "${SPRINT8_BIND:-127.0.0.1}:8083:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["sh", "-c", "mvn -B -ntp clean verify && exec java -jar target/uml-backend-0.0.1-SNAPSHOT.jar"]
+volumes:
+  sprint8_data:
+  sprint8_maven:

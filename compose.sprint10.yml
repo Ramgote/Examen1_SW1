@@ -1,0 +1,50 @@
+# Isolated generated applications; does not restart the platform or sprint 8.
+services:
+  db:
+    image: postgres:16-alpine
+    volumes:
+      - ./scripts/sprint10-init.sql:/docker-entrypoint-initdb.d/10-schemas.sql:ro
+    environment:
+      POSTGRES_DB: generated_db
+      POSTGRES_USER: generated
+      POSTGRES_PASSWORD: ${SPRINT10_DB_PASSWORD:?Set SPRINT10_DB_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U generated -d generated_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  tienda:
+    image: maven:3.9-eclipse-temurin-21
+    working_dir: /workspace
+    volumes:
+      - ./exports/sprint-10-cliente-pedido/backend:/workspace
+      - maven_tienda:/root/.m2
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/generated_db?currentSchema=tienda
+      DB_USER: generated
+      DB_PASSWORD: ${SPRINT10_DB_PASSWORD:?Set SPRINT10_DB_PASSWORD}
+      DDL_AUTO: create
+      SPRING_JPA_PROPERTIES_HIBERNATE_HBM2DDL_CREATE_NAMESPACES: "true"
+    ports: ["127.0.0.1:8084:8080"]
+    depends_on:
+      db: {condition: service_healthy}
+    command: ["sh", "-c", "mvn -B -ntp clean verify && exec java -jar target/uml-backend-0.0.1-SNAPSHOT.jar"]
+  taller:
+    image: maven:3.9-eclipse-temurin-21
+    working_dir: /workspace
+    volumes:
+      - ./exports/sprint-10-taller/backend:/workspace
+      - maven_taller:/root/.m2
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/generated_db?currentSchema=taller
+      DB_USER: generated
+      DB_PASSWORD: ${SPRINT10_DB_PASSWORD:?Set SPRINT10_DB_PASSWORD}
+      DDL_AUTO: create
+      SPRING_JPA_PROPERTIES_HIBERNATE_HBM2DDL_CREATE_NAMESPACES: "true"
+    ports: ["127.0.0.1:8085:8080"]
+    depends_on:
+      db: {condition: service_healthy}
+    command: ["sh", "-c", "mvn -B -ntp clean verify && exec java -jar target/uml-backend-0.0.1-SNAPSHOT.jar"]
+volumes:
+  maven_tienda:
+  maven_taller:

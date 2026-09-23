@@ -1,0 +1,82 @@
+package com.generated.service;
+
+import com.generated.entity.*;
+import com.generated.dto.{{ c.name }}Request;
+import com.generated.dto.{{ c.name }}Response;
+import com.generated.repository.{{ c.name }}Repository;
+import jakarta.persistence.EntityManager;
+import java.util.*;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.web.server.ResponseStatusException;
+import static org.springframework.http.HttpStatus.*;
+
+@Service
+@Transactional(readOnly = true)
+public class {{ c.name }}Service {
+    private final {{ c.name }}Repository repository;
+    private final EntityManager em;
+    public {{ c.name }}Service({{ c.name }}Repository repository, EntityManager em) {
+        this.repository = repository; this.em = em;
+    }
+    private {{ c.name }} require({{ c.pk.type }} id) {
+        return repository.findById(id).orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Recurso no encontrado"));
+    }
+    public List<{{ c.name }}Response> list(int page, int size) {
+        if (page < 0 || size < 1 || size > 100) throw new ResponseStatusException(BAD_REQUEST, "page >= 0; size entre 1 y 100");
+        return repository.findAll(PageRequest.of(page, size, Sort.by("{{ c.pk.name }}"))).map({{ c.name }}Response::from).getContent();
+    }
+    public {{ c.name }}Response get({{ c.pk.type }} id) { return {{ c.name }}Response.from(require(id)); }
+    @Transactional
+    public {{ c.name }}Response create({{ c.name }}Request request) {
+{% if not c.pk.generated %}
+        if (repository.existsById(request.{{ c.pk.name }}())) throw new ResponseStatusException(CONFLICT, "Identificador existente");
+{% endif %}
+        if (request.entityVersion() != null) throw new ResponseStatusException(BAD_REQUEST, "No envíe entityVersion al crear");
+        {{ c.name }} entity = new {{ c.name }}();
+        apply(entity, request);
+        entity = repository.saveAndFlush(entity);
+        return {{ c.name }}Response.from(entity);
+    }
+    @Transactional
+    public {{ c.name }}Response update({{ c.pk.type }} id, {{ c.name }}Request request) {
+        {{ c.name }} entity = require(id);
+        if (!Objects.equals(request.entityVersion(), entity.getEntityVersion()))
+            throw new ResponseStatusException(CONFLICT, "Versión desactualizada; vuelva a consultar el recurso");
+{% if not c.pk.generated %}
+        if (!Objects.equals(id, request.{{ c.pk.name }}())) throw new ResponseStatusException(BAD_REQUEST, "La PK es inmutable");
+{% endif %}
+        apply(entity, request); repository.flush();
+        return {{ c.name }}Response.from(entity);
+    }
+    @Transactional
+    public void delete({{ c.pk.type }} id) { repository.delete(require(id)); repository.flush(); }
+    private void apply({{ c.name }} entity, {{ c.name }}Request request) {
+{% for a in c.request_attrs %}
+        entity.set{{ a.cap }}(request.{{ a.name }}());
+{% endfor %}
+{% for r in c.owned_rels %}
+{% if r.many %}
+        Set<{{ r.other }}> related{{ loop.index }} = new LinkedHashSet<>();
+        for ({{ r.other_pk.type }} key : request.{{ r.name }}Ids()) {
+            {{ r.other }} value = em.find({{ r.other }}.class, key);
+            if (value == null) throw new ResponseStatusException(NOT_FOUND, "Referencia {{ r.name }} inexistente");
+            related{{ loop.index }}.add(value);
+        }
+        entity.get{{ r.cap }}().clear(); entity.get{{ r.cap }}().addAll(related{{ loop.index }});
+{% else %}
+        {{ r.other }} related{{ loop.index }} = request.{{ r.name }}Id() == null ? null : em.find({{ r.other }}.class, request.{{ r.name }}Id());
+        if (request.{{ r.name }}Id() != null && related{{ loop.index }} == null)
+            throw new ResponseStatusException(NOT_FOUND, "Referencia {{ r.name }} inexistente");
+        entity.set{{ r.cap }}(related{{ loop.index }});
+{% endif %}
+{% endfor %}
+    }
+{% for r in c.all_rels %}
+    public {% if r.many %}Set<{{ r.other_pk.type }}>{% else %}{{ r.other_pk.type }}{% endif %} {{ r.name }}({{ c.pk.type }} id) {
+        return get(id).{{ r.name }}{{ 'Ids' if r.many else 'Id' }}();
+    }
+{% endfor %}
+}

@@ -1,0 +1,29 @@
+package com.generated.dto;
+
+import com.generated.entity.{{ c.name }};
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+public record {{ c.name }}Response(
+{% for a in c.all_attrs %}
+    {{ a.type }} {{ a.name }},
+{% endfor %}
+{% for r in c.all_rels %}
+    {% if r.many %}Set<{{ r.other_pk.type }}>{% else %}{{ r.other_pk.type }}{% endif %} {{ r.name }}{{ 'Ids' if r.many else 'Id' }},
+{% endfor %}
+    Long entityVersion
+) {
+    public static {{ c.name }}Response from({{ c.name }} entity) {
+        return new {{ c.name }}Response(
+{% for a in c.all_attrs %}
+            entity.get{{ a.cap }}(),
+{% endfor %}
+{% for r in c.all_rels %}
+            {% if r.many %}entity.get{{ r.cap }}().stream().map(item -> item.get{{ r.other_pk.cap }}()).collect(Collectors.toSet()){% else %}entity.get{{ r.cap }}() == null ? null : entity.get{{ r.cap }}().get{{ r.other_pk.cap }}(){% endif %},
+{% endfor %}
+            entity.getEntityVersion());
+    }
+}

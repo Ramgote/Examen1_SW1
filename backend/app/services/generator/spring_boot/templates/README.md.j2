@@ -1,0 +1,70 @@
+# Backend generado desde UML
+
+## Compatibilidad con el cliente móvil
+
+`GET /api/_meta/contract` devuelve el descriptor `mobile-contract.json` incluido
+en este ZIP. La app compara formato y huella con su descriptor empaquetado antes
+de operar. Cambios visuales del canvas no cambian la huella; los cambios del
+contrato sí. No contiene credenciales ni registros. Los clientes móviles deben
+usar las rutas del descriptor, sin pluralizar nombres de entidades.
+
+Modelo guardado versión {{ version }}. Java 21, Maven 3.6.3+, Spring Boot {{ boot_version }}, PostgreSQL.
+
+## Ejecutar en desarrollo (PowerShell)
+
+```powershell
+$env:DB_PASSWORD = 'elige-una-clave-local'
+docker compose -p uml-generated up -d
+$env:DDL_AUTO = 'update'
+mvn clean verify
+mvn spring-boot:run
+```
+
+La base generada usa localhost:5434/generated_db y el usuario generated. API en localhost:8080.
+También puede configurar DB_URL, DB_USER y SERVER_PORT. Nunca conecte este proyecto a la base de la plataforma.
+El modo predeterminado DDL_AUTO=validate exige un esquema preexistente. update es solo para desarrollo;
+revise el DDL y prepare migraciones versionadas antes de desplegar. HikariCP gestiona el pool.
+
+## Contrato REST
+
+POST crea (201), GET consulta (200), PUT reemplaza (200), DELETE elimina (204).
+GET colección acepta page=0&size=20 (máximo 100). PUT requiere entityVersion devuelta por GET;
+una versión desactualizada devuelve 409. Las PK explícitas son asignadas por el cliente e inmutables.
+Los ID añadidos automáticamente por el generador no se envían en POST/PUT.
+Los errores de validación devuelven 400, referencias inexistentes 404 y conflictos de integridad 409.
+Los DTO evitan recursión JSON: las relaciones se representan como Id o Ids, no como objetos anidados.
+
+{% for c in classes %}
+### {{ c.name }}{% if c.abstract %} (abstracta, sin controlador){% endif %}
+
+Tabla: `{{ c.table }}`. PK: `{{ c.pk.name }}` (`{{ c.pk.type }}`).
+{% if not c.abstract %}
+Ruta: `/api/{{ c.name | lower }}`.
+Campos POST/PUT: {% for a in c.request_attrs %}`{{ a.name }}`{% if not loop.last %}, {% endif %}{% endfor %}.
+{% endif %}
+{% for r in c.all_rels %}
+- `{{ r.name }}{{ 'Ids' if r.many else 'Id' }}` → {{ r.other }}. {% if r.owner %}Escribible en POST/PUT; {% if r.many %}envíe un conjunto de IDs (incluso []); {% endif %}{% else %}Solo lectura: modifique `{{ r.other }}.{{ r.inverse }}` en el extremo propietario; {% endif %}consulta `GET /api/{{ c.name | lower }}/{id}/{{ r.name }}`.{% if r.composition %} Eliminar este todo elimina sus partes en cascada.{% endif %}
+{% endfor %}
+
+{% endfor %}
+## Decisiones y límites
+
+- Paquete Java fijo com.generated, con capas entity/repository/dto/service/api. Los paquetes UML originales quedan en model.json.
+- Herencia JOINED: la subclase hereda la PK. No se permite herencia múltiple.
+- 1:N es bidireccional con FK en N; N:M usa JoinTable; 1:1 usa FK única en origen.
+- La composición aplica CascadeType.REMOVE desde el todo. Desvincular no elimina huérfanos automáticamente.
+- Agregación/asociación no eliminan objetos relacionados. Una FK entrante puede impedir DELETE (409).
+- Las colecciones escribibles tienen límite operativo de 1000 IDs. Los extremos inversos no son campos de escritura.
+- Las multiplicidades inversas mínimas o máximas >1 necesitan reglas de agregado adicionales; no se promete su cumplimiento global.
+- Los métodos de negocio UML se conservan como diseño; no se inventan implementaciones.
+- Los repositorios incluyen búsquedas derivadas de hasta 100 resultados por atributo; los controladores exponen CRUD y consultas relacionales.
+- Es una base de desarrollo ejecutable. Faltan autenticación/autorización del dominio generado, migraciones revisadas,
+  reglas de negocio, pruebas de carga y configuración de despliegue antes de considerarlo listo para producción.
+
+## Avisos del modelo
+
+{% for warning in warnings %}
+- {{ warning }}
+{% endfor %}
+
+`model.json` conserva el diagrama y `generation-report.json` describe la transformación. No se incluyen secretos de la plataforma.

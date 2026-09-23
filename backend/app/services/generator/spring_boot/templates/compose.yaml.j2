@@ -1,0 +1,14 @@
+# Base aislada para el backend generado; no usa la base de la plataforma.
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: generated_db
+      POSTGRES_USER: generated
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Defina DB_PASSWORD}
+    ports:
+      - "127.0.0.1:5434:5432"
+    volumes:
+      - generated_data:/var/lib/postgresql/data
+volumes:
+  generated_data:

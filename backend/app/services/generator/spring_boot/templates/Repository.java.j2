@@ -1,0 +1,14 @@
+package com.generated.repository;
+
+import com.generated.entity.{{ c.name }};
+import org.springframework.data.jpa.repository.JpaRepository;
+import java.util.List;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+public interface {{ c.name }}Repository extends JpaRepository<{{ c.name }}, {{ c.pk.type }}> {
+{% for a in c.all_attrs if not a.pk %}
+    List<{{ c.name }}> findTop100By{{ a.cap }}({{ a.type }} value);
+{% endfor %}
+}

@@ -1,0 +1,99 @@
+# ==========================================
+# Carpetas y Documentación Interna Excluidas
+# ==========================================
+AnalisisPaquetes/
+ayuda/
+DiagramaArquitectura/
+docs/
+documentacion/
+documentación/
+exports/
+nueva UI/
+practicas EA/
+scratch/
+scripts/
+
+# ==========================================
+# Variables de Entorno y Credenciales
+# ==========================================
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.cert
+
+# ==========================================
+# Frontend & Node.js
+# ==========================================
+node_modules/
+dist/
+build/
+.next/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ==========================================
+# Python & Backend
+# ==========================================
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+ENV/
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+
+# ==========================================
+# Java / Maven / Gradle
+# ==========================================
+target/
+*.jar
+*.war
+*.ear
+*.class
+.m2/
+.gradle/
+
+# ==========================================
+# Flutter / Dart / Android / Mobile
+# ==========================================
+.dart_tool/
+.pub/
+.pub-cache/
+**/build/
+android/.gradle/
+local.properties
+*.apk
+*.aab
+*.ipa
+
+# ==========================================
+# Editores e IDEs
+# ==========================================
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln.docstates
+*.swp
+*.swo
+
+# ==========================================
+# Sistema Operativo y Archivos Temporales
+# ==========================================
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.log
+*.tmp
+*.temp
+tmp/
+temp/

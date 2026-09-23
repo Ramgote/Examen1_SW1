@@ -1,0 +1,42 @@
+.shell:has(.uml-editor) { max-width: 1800px; }
+.uml-toolbar { display: flex; align-items: center; gap: .8rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.uml-toolbar h2 { margin: 0; flex: 1; }
+.uml-connect { flex: 1; }
+.uml-connect fieldset { display: flex; align-items: end; gap: .8rem; flex-wrap: wrap; }
+.uml-connect label { flex: 1; min-width: 130px; margin: 0; }
+.uml-editor fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+.uml-workspace { display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 1rem; }
+.uml-canvas { height: 680px; border: 1px solid #c6d4e3; border-radius: 10px; background: #f9fbfe; }
+.uml-inspector { max-height: 680px; overflow: auto; padding: 1rem; }
+.uml-inspector h3 { margin-top: 0; }
+.uml-class { min-width: 240px; max-width: 460px; background: white; border: 1.6px solid #233c54; border-radius: 4px; color: #172638; font-size: 13px; box-shadow: 0 3px 8px #17263815; }
+.uml-class.is-selected { outline: 3px solid #0094a8; }
+.uml-class-title { text-align: center; padding: .7rem; overflow-wrap: anywhere; }
+.uml-class-title strong { font-size: 15px; }
+.uml-compartment { padding: .55rem .8rem; border-top: 1px solid #233c54; min-height: 32px; line-height: 1.6; overflow-wrap: anywhere; }
+.uml-abstract { font-style: italic; }
+.uml-static { text-decoration: underline; }
+.uml-empty { color: #7a8795; }
+.uml-check { display: flex; align-items: center; gap: .5rem; }
+.uml-check input { width: auto; }
+.uml-checks { display: grid; grid-template-columns: 1fr 1fr; }
+.uml-checks label { margin: .35rem 0; font-size: .85rem; }
+.uml-property { border: 1px solid #d6dfeb; padding: .7rem; margin: .7rem 0; border-radius: 6px; }
+.uml-property summary { cursor: pointer; font-weight: 600; overflow-wrap: anywhere; }
+.uml-parameter { border-left: 3px solid #d6dfeb; padding-left: .6rem; margin: .8rem 0; }
+.uml-edge-text { font: 12px system-ui, sans-serif; fill: #233c54; paint-order: stroke; stroke: #fff; stroke-width: 4px; stroke-linejoin: round; }
+.uml-errors { white-space: pre-wrap; overflow-wrap: anywhere; }
+.uml-relation-item { margin: .7rem .7rem 0 0; }
+.react-flow__controls button { padding: 5px; border-radius: 0; }
+@media (max-width: 900px) { .uml-workspace { grid-template-columns: 1fr; } .uml-canvas { height: 520px; } .uml-inspector { max-height: none; } }
+.uml-participant { border: 1px solid #64748b; border-radius: 1rem; padding: .3rem .7rem; font-size: .85rem; }
+.assistant-panel textarea { width: 100%; box-sizing: border-box; resize: vertical; }
+.assistant-attachments { display: flex; flex-wrap: wrap; gap: 1rem; margin: 1rem 0; }
+.assistant-attachment { display: flex; flex-direction: column; gap: .5rem; max-width: 300px; overflow-wrap: anywhere; }
+.assistant-attachment img { max-width: 260px; max-height: 180px; object-fit: contain; }
+.assistant-attachment audio { max-width: 100%; }
+.assistant-proposal { border-top: 1px solid #c6d4e3; padding-top: 1rem; }
+.assistant-diff { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.assistant-diff section { min-width: 0; overflow-wrap: anywhere; }
+.assistant-proposal pre { max-height: 20rem; overflow: auto; }
+@media (max-width: 700px) { .assistant-diff { grid-template-columns: 1fr; } }

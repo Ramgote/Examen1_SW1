@@ -1,0 +1,13 @@
+# Optional Wi-Fi access. PostgreSQL keeps its loopback binding from the base file.
+# PowerShell: $env:LAN_IP='192.168.1.51'
+services:
+  backend:
+    ports:
+      - "${LAN_IP:?Define LAN_IP with the PC Wi-Fi IPv4}:8000:8000"
+    environment:
+      BACKEND_CORS_ORIGINS: '["http://localhost:5173","http://127.0.0.1:5173","http://${LAN_IP}:5173"]'
+  frontend:
+    ports:
+      - "${LAN_IP:?Define LAN_IP with the PC Wi-Fi IPv4}:5173:5173"
+    environment:
+      VITE_API_URL: "http://${LAN_IP}:8000"

@@ -1,0 +1,175 @@
+{
+  "format_version": 1,
+  "api_prefix": "/api",
+  "entities": [
+    {
+      "name": "Cliente",
+      "tableName": "t__cliente_f851d9a8",
+      "endpoint": "/cliente",
+      "attributes": [
+        {
+          "name": "id",
+          "type": "Long",
+          "is_pk": true,
+          "is_nullable": false,
+          "generated": true,
+          "unique": false,
+          "max_length": null
+        },
+        {
+          "name": "nombre",
+          "type": "String",
+          "is_pk": false,
+          "is_nullable": false,
+          "generated": false,
+          "unique": false,
+          "max_length": 255
+        },
+        {
+          "name": "email",
+          "type": "String",
+          "is_pk": false,
+          "is_nullable": false,
+          "generated": false,
+          "unique": true,
+          "max_length": 255
+        }
+      ],
+      "relationships": [
+        {
+          "name": "pedidos",
+          "entity": "Pedido",
+          "type": "Long",
+          "field": "pedidosIds",
+          "many": true,
+          "writable": false,
+          "minimum": 0,
+          "maximum": null,
+          "required": true,
+          "input_maximum": 1000,
+          "cascade_delete": false
+        }
+      ],
+      "request_fields": [
+        "nombre",
+        "email",
+        "entityVersion"
+      ],
+      "response_fields": [
+        "id",
+        "nombre",
+        "email",
+        "pedidosIds",
+        "entityVersion"
+      ],
+      "primary_key": {
+        "name": "id",
+        "type": "Long",
+        "generated": true
+      },
+      "operations": [
+        "list",
+        "get",
+        "create",
+        "update",
+        "delete"
+      ]
+    },
+    {
+      "name": "Pedido",
+      "tableName": "t__pedido_9e9ea577",
+      "endpoint": "/pedido",
+      "attributes": [
+        {
+          "name": "id",
+          "type": "Long",
+          "is_pk": true,
+          "is_nullable": false,
+          "generated": true,
+          "unique": false,
+          "max_length": null
+        },
+        {
+          "name": "fecha",
+          "type": "LocalDate",
+          "is_pk": false,
+          "is_nullable": false,
+          "generated": false,
+          "unique": false,
+          "max_length": null
+        },
+        {
+          "name": "total",
+          "type": "BigDecimal",
+          "is_pk": false,
+          "is_nullable": false,
+          "generated": false,
+          "unique": false,
+          "max_length": null
+        },
+        {
+          "name": "estado",
+          "type": "String",
+          "is_pk": false,
+          "is_nullable": false,
+          "generated": false,
+          "unique": false,
+          "max_length": 255
+        }
+      ],
+      "relationships": [
+        {
+          "name": "cliente",
+          "entity": "Cliente",
+          "type": "Long",
+          "field": "clienteId",
+          "many": false,
+          "writable": true,
+          "minimum": 1,
+          "maximum": 1,
+          "required": true,
+          "input_maximum": null,
+          "cascade_delete": false
+        }
+      ],
+      "request_fields": [
+        "fecha",
+        "total",
+        "estado",
+        "clienteId",
+        "entityVersion"
+      ],
+      "response_fields": [
+        "id",
+        "fecha",
+        "total",
+        "estado",
+        "clienteId",
+        "entityVersion"
+      ],
+      "primary_key": {
+        "name": "id",
+        "type": "Long",
+        "generated": true
+      },
+      "operations": [
+        "list",
+        "get",
+        "create",
+        "update",
+        "delete"
+      ]
+    }
+  ],
+  "pagination": {
+    "default_size": 20,
+    "max_size": 100,
+    "first_page": 0
+  },
+  "update": {
+    "method": "PUT",
+    "version_field": "entityVersion",
+    "full_replace": true
+  },
+  "fingerprint": "b3fb088a7c92ad9573009e61d0f745e46f1c044af4c4342f25aae6c365cc127d"
+}

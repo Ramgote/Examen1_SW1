@@ -1,0 +1,64 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    env_file: ./backend/.env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgrespassword}
+      POSTGRES_DB: ${POSTGRES_DB:-uml_platform_db}
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  migrate:
+    build: ./backend
+    env_file: ./backend/.env
+    environment:
+      POSTGRES_SERVER: db
+      POSTGRES_PORT: 5432
+    command: ["alembic", "upgrade", "head"]
+    depends_on:
+      db:
+        condition: service_healthy
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    env_file: ./backend/.env
+    environment:
+      POSTGRES_SERVER: db
+      POSTGRES_PORT: 5432
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - ./backend:/app
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8000/api/v1/health/ready"]
+      interval: 10s
+      timeout: 7s
+      retries: 5
+      start_period: 10s
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "127.0.0.1:5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  postgres_data:

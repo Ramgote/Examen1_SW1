@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Synthetic interoperable UML fixture, not an export captured from Enterprise Architect. -->
+<xmi:XMI xmlns:xmi="http://www.omg.org/spec/XMI/20131001" xmlns:uml="http://www.omg.org/spec/UML/20131001" xmi:version="2.5.1">
+  <uml:Model xmi:id="M" name="Sales">
+    <packagedElement xmi:type="uml:Package" xmi:id="P" name="ventas">
+      <packagedElement xmi:type="uml:Class" xmi:id="A" name="Pedido">
+        <ownedAttribute xmi:id="name" name="nombre" visibility="private">
+          <type xmi:type="uml:PrimitiveType" href="http://www.omg.org/spec/UML/20131001/PrimitiveTypes.xmi#String"/>
+        </ownedAttribute>
+        <ownedAttribute xmi:id="parts" name="lineas" type="B" association="R" aggregation="composite">
+          <lowerValue xmi:type="uml:LiteralInteger" value="0"/>
+          <upperValue xmi:type="uml:LiteralUnlimitedNatural" value="*"/>
+        </ownedAttribute>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Class" xmi:id="B" name="Linea"/>
+      <packagedElement xmi:type="uml:Association" xmi:id="R" memberEnd="parts whole">
+        <ownedEnd xmi:id="whole" name="pedido" type="A" association="R"/>
+      </packagedElement>
+    </packagedElement>
+  </uml:Model>
+</xmi:XMI>

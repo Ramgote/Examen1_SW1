@@ -1,0 +1,17 @@
+package com.generated.dto;
+
+import jakarta.validation.constraints.*;
+import java.util.Set;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+public record {{ c.name }}Request(
+{% for a in c.request_attrs %}
+    {% if not a.nullable %}@NotNull {% endif %}{% if a.type == 'String' and not a.text %}@Size(max = 255) {% endif %}{{ a.type }} {{ a.name }},
+{% endfor %}
+{% for r in c.owned_rels %}
+    {% if r.min or r.many %}@NotNull {% endif %}{% if r.many %}@Size(min = {{ r.min }}, max = {{ r.max if r.max is not none else 1000 }}) Set<@NotNull {{ r.other_pk.type }}>{% else %}{{ r.other_pk.type }}{% endif %} {{ r.name }}{{ 'Ids' if r.many else 'Id' }},
+{% endfor %}
+    Long entityVersion
+) {}

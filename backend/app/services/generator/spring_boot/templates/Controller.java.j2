@@ -1,0 +1,35 @@
+package com.generated.api;
+
+import com.generated.dto.{{ c.name }}Request;
+import com.generated.dto.{{ c.name }}Response;
+import com.generated.service.{{ c.name }}Service;
+import jakarta.validation.Valid;
+import java.util.List;
+import java.util.Set;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.http.HttpStatus;
+
+@RestController
+@RequestMapping("/api/{{ c.name | lower }}")
+public class {{ c.name }}Controller {
+    private final {{ c.name }}Service service;
+    public {{ c.name }}Controller({{ c.name }}Service service) { this.service = service; }
+    @GetMapping
+    public List<{{ c.name }}Response> list(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
+        return service.list(page, size);
+    }
+    @GetMapping("/{id}")
+    public {{ c.name }}Response get(@PathVariable {{ c.pk.type }} id) { return service.get(id); }
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public {{ c.name }}Response create(@Valid @RequestBody {{ c.name }}Request body) { return service.create(body); }
+    @PutMapping("/{id}")
+    public {{ c.name }}Response update(@PathVariable {{ c.pk.type }} id, @Valid @RequestBody {{ c.name }}Request body) { return service.update(id, body); }
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(@PathVariable {{ c.pk.type }} id) { service.delete(id); }
+{% for r in c.all_rels %}
+    @GetMapping("/{id}/{{ r.name }}")
+    public {% if r.many %}Set<{{ r.other_pk.type }}>{% else %}{{ r.other_pk.type }}{% endif %} {{ r.name }}(@PathVariable {{ c.pk.type }} id) { return service.{{ r.name }}(id); }
+{% endfor %}
+}
