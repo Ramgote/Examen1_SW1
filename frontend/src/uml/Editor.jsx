@@ -339,7 +339,7 @@ export function Editor({ project, user, token, onClose, onDirtyChange }) {
             <div
               hidden={!showAssistantDock && !assistantBusy}
               style={!showAssistantDock && !assistantBusy ? { display: 'none' } : undefined}
-              className="absolute bottom-2 left-3 right-3 z-30 bg-surface-container-lowest/95 backdrop-blur-md border border-outline-variant/60 shadow-2xl rounded-xl flex flex-col overflow-hidden max-h-[65vh]"
+              className="absolute bottom-2 left-3 right-3 z-30 bg-surface-container-lowest/95 backdrop-blur-md border border-outline-variant/60 shadow-2xl rounded-xl flex flex-col overflow-hidden max-h-[40%]"
             >
               {/* Cabecera del Drawer */}
               <div
@@ -373,7 +373,7 @@ export function Editor({ project, user, token, onClose, onDirtyChange }) {
               </div>
 
               {/* Cuerpo del Drawer */}
-                <div className="p-3.5 overflow-y-auto flex-1 bg-surface-container-lowest">
+                <div className="p-2 overflow-y-auto min-h-0 flex-1 bg-surface-container-lowest">
                   <AssistantPanel
                     key={project.id}
                     visible={showAssistantDock || assistantBusy}

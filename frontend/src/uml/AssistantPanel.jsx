@@ -263,24 +263,11 @@ export function AssistantPanel({ projectId, token, shared, externalBusy, onBusy,
   ]
 
   return (
-    <div className="flex flex-col gap-3 font-sans text-xs text-on-surface select-none">
-      <section aria-label="Conversación con el asistente" className="rounded-xl border border-outline-variant/50 bg-surface-container-lowest p-3">
-        <p className="font-semibold text-secondary mb-2">Asistente UML</p>
-        <p className="leading-relaxed select-text">{welcome}</p>
-        <div className="flex flex-wrap gap-2 my-2">
-          <button type="button" disabled={!speech.supported || recording} aria-pressed={speech.enabled}
-            className="rounded border px-2 py-1 disabled:opacity-40"
-            onClick={() => speech.enabled ? speech.disable() : speech.enable(welcome)}>
-            {speech.enabled ? 'Silenciar respuestas' : 'Activar voz y escuchar saludo'}
-          </button>
-          <button type="button" disabled={!speech.speaking} onClick={speech.stop}
-            className="rounded border px-2 py-1 disabled:opacity-40">Detener audio</button>
-        </div>
-        {!speech.supported && <p role="status">La lectura de voz no está disponible en este navegador. Puedes usar texto y adjuntar audio.</p>}
-        {speech.error && <p role="status">{speech.error}</p>}
-        {speech.speaking && <p role="status">El asistente está hablando…</p>}
-        <p className="text-[11px]">Pulsa Hablar, haz tu pregunta y luego Terminar y enviar. Responderé en voz alta. El micrófono sólo se activa cuando lo solicitas.</p>
-        <div role="log" aria-live="polite" aria-relevant="additions" className="mt-3 max-h-64 overflow-y-auto flex flex-col gap-2 select-text">
+    <div className="flex flex-col gap-2 font-sans text-xs text-on-surface select-none">
+      {messages.length > 0 && (
+        <details className="text-[11px]">
+          <summary className="cursor-pointer text-secondary">Historial ({messages.length})</summary>
+        <div role="log" aria-live="polite" aria-relevant="additions" className="mt-2 max-h-32 overflow-y-auto flex flex-col gap-2 select-text">
           {messages.map((message, index) => (
             <div key={index} className={`rounded-lg p-2 whitespace-pre-wrap break-words ${message.role === 'user' ? 'bg-secondary-fixed text-on-secondary-fixed ml-4' : 'bg-surface-container-low mr-4'}`}>
               <strong className="block mb-1">{message.role === 'user' ? 'Tú' : 'Asistente'}</strong>
@@ -293,9 +280,14 @@ export function AssistantPanel({ projectId, token, shared, externalBusy, onBusy,
           ))}
           <div ref={chatEnd} />
         </div>
-        {phase && <p role="status" className="mt-2 text-secondary animate-pulse">{phase}</p>}
-        <p className="mt-2 text-[10px] text-on-surface-variant">La conversación es temporal. Adjunta de nuevo los archivos que quieras volver a consultar.</p>
-      </section>
+        </details>
+      )}
+      {phase && <p role="status" className="text-secondary animate-pulse">{phase}</p>}
+      {speech.error && <p role="status">{speech.error}</p>}
+      {!speech.supported && <p role="status">Lectura de voz no disponible en este navegador.</p>}
+      {!proposal?.changes.length && messages.at(-1)?.role === 'assistant' && (
+        <p role="status" className="max-h-20 overflow-y-auto whitespace-pre-wrap break-words select-text text-[11px]">{messages.at(-1).content}</p>
+      )}
       {/* Estado del Backend Gemini */}
       {config && !config.configured && (
         <div role="status" className="p-2.5 bg-amber-50 border border-amber-200 text-amber-900 rounded-lg flex items-center gap-2">
@@ -319,13 +311,13 @@ export function AssistantPanel({ projectId, token, shared, externalBusy, onBusy,
           <textarea
             ref={promptRef}
             aria-label="Mensaje para el asistente UML"
-            rows={3}
+            rows={2}
             maxLength={8000}
             value={prompt}
             disabled={busy || recording || externalBusy || shared.role === 'VIEWER'}
             placeholder="Describe en lenguaje natural los cambios arquitecturales, adjunta un boceto/diagrama o graba un comando de voz…"
             onChange={event => { setPrompt(event.target.value); setProposal(null) }}
-            className="w-full p-2.5 bg-surface-container-low text-on-surface border border-outline-variant/60 rounded-lg font-sans text-xs outline-none focus:ring-1 focus:ring-secondary focus:bg-surface-container-lowest transition-all disabled:opacity-50 resize-y min-h-[70px]"
+            className="w-full p-2.5 bg-surface-container-low text-on-surface border border-outline-variant/60 rounded-lg font-sans text-xs outline-none focus:ring-1 focus:ring-secondary focus:bg-surface-container-lowest transition-all disabled:opacity-50 resize-y min-h-[48px] max-h-24"
           />
           <div className="absolute right-2 bottom-2 text-[9px] text-on-surface-variant font-mono">
             {prompt.length}/8000
@@ -355,7 +347,7 @@ export function AssistantPanel({ projectId, token, shared, externalBusy, onBusy,
 
         {/* Barra de Acciones y Adjuntos */}
         <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-outline-variant/30">
-          <div className="flex items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-1.5">
             {/* Input oculto de archivos */}
             <input
               ref={fileInputRef}
@@ -403,6 +395,15 @@ export function AssistantPanel({ projectId, token, shared, externalBusy, onBusy,
                 <span>Terminar y enviar</span>
               </button>
             )}
+
+            <button type="button" disabled={!speech.supported || recording} aria-pressed={speech.enabled}
+              title={speech.enabled ? 'Silenciar las respuestas habladas' : 'Activar respuestas habladas y escuchar saludo'}
+              className="rounded-lg border border-outline-variant/50 px-2 py-1.5 text-[11px] disabled:opacity-40"
+              onClick={() => speech.enabled ? speech.disable() : speech.enable(welcome)}>
+              {speech.enabled ? 'Silenciar' : 'Activar voz'}
+            </button>
+            {speech.speaking && <button type="button" onClick={speech.stop}
+              className="rounded-lg border border-outline-variant/50 px-2 py-1.5 text-[11px]">Detener audio</button>}
 
             {voice.state === 'requesting' && (
               <span className="text-[10px] text-secondary font-mono animate-pulse">
@@ -537,7 +538,7 @@ export function AssistantPanel({ projectId, token, shared, externalBusy, onBusy,
           )}
 
           {/* Listado de Cambios con Diffs Detallados */}
-          <div className="flex flex-col gap-2 max-h-[300px] overflow-y-auto pr-1">
+          <div className="flex flex-col gap-2 max-h-[160px] overflow-y-auto pr-1">
             {proposal.changes.map(change => {
               const badgeColor =
                 change.action === 'add'
