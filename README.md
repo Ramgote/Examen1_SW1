@@ -1,5 +1,17 @@
 # Plataforma colaborativa UML 2.5
 
+Asistente conversacional: bienvenida, historial temporal, contexto reciente y
+respuestas de aclaración sin modificar el canvas. Mantiene revisión y confirmación
+para aplicar propuestas. [Implementación y ensayo](docs/mejoras-asistente-conversacional-2026-09-26.md).
+Incluye conversación por turnos de voz: Hablar, Terminar y enviar, respuesta
+hablada en español y controles para silenciar, detener o repetir el audio.
+
+Corrección 26/09/2026: clase de asociación con vínculo persistente, conexión
+discontinua reactiva e intercambio `AssociationClass` sin duplicar el clasificador.
+La exportación EA distingue los identificadores visuales de clase y conector
+y conserva las referencias que los vinculan.
+[Implementación, finalidad y pruebas](docs/correcciones-clase-asociacion-2026-09-26.md).
+
 Sprint 10: generación conjunta Spring Boot + Flutter Android desde una misma
 versión guardada del canvas. Incluye modelos y servicios Dart, contrato compartido,
 validación y descarga ZIP desde la web. Aceptación manual de la nueva descarga pendiente.

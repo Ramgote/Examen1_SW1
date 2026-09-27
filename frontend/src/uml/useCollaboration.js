@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { CollaborationClient } from './collaboration'
+import { API_BASE } from '../apiBase'
 
 export function useCollaboration(project, token) {
   const client = useRef(null)
   const [state, setState] = useState({ diagram: null, dirty: false, status: 'Conectando',
     error: '', participants: [], role: project.role, ready: false, pending: false, blocked: false })
   useEffect(() => {
-    const url = new URL(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/projects/${project.id}/ws`)
+    const url = new URL(`${API_BASE}/api/v1/projects/${project.id}/ws`)
     url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:'
     const connection = new CollaborationClient({ url: url.toString(), token, role: project.role, notify: setState })
     client.current = connection

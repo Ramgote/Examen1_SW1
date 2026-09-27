@@ -9,10 +9,16 @@ class Attachment(UMLModel):
     data: str = Field(min_length=1, max_length=8 * 1024 * 1024, repr=False)
 
 
+class ConversationMessage(UMLModel):
+    role: Literal['user', 'assistant']
+    content: str = Field(min_length=1, max_length=3000)
+
+
 class AssistantRequest(UMLModel):
     expected_version: int = Field(ge=1, le=2147483646, strict=True)
     prompt: str = Field(default='', max_length=8000)
     attachments: list[Attachment] = Field(default_factory=list, max_length=4)
+    history: list[ConversationMessage] = Field(default_factory=list, max_length=6)
 
     @model_validator(mode='after')
     def content_required(self):

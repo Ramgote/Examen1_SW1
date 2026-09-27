@@ -1,4 +1,4 @@
-const BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+import { API_BASE as BASE } from './apiBase'
 
 export async function api(path, { token, method = 'GET', body, sessionId } = {}) {
   const response = await fetch(`${BASE}/api/v1${path}`, {

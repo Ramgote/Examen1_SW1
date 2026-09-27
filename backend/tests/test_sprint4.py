@@ -21,7 +21,7 @@ class XMIUnitTests(unittest.TestCase):
                                         ('-1', '1', None), ('-2', '-1', None), ('5', '2', None)]:
             with self.subTest(lower=lower, upper=upper):
                 root = etree.fromstring(serialize_ea_xmi(UMLCanvasDiagram.model_validate(example()), uuid4()))
-                end = root.xpath('.//ownedEnd')[1]
+                end = root.xpath('.//ownedEnd')[0]
                 end.find('lowerValue').set('value', lower)
                 end.find('upperValue').set('value', upper)
                 raw = etree.tostring(root)

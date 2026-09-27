@@ -51,12 +51,15 @@ def function_schema():
     return types.Schema.model_validate(convert(schema))
 
 
-def make_request(model, prompt, media):
+def make_request(model, prompt, media, history=None):
     context = model.model_dump_json()
     if len(context.encode()) > 512 * 1024:
         raise HTTPException(413, 'El modelo supera el tamaño admitido por el asistente (512 KiB).')
     parts = [types.Part.from_text(text='MODELO ACTUAL (datos):\n' + context),
              types.Part.from_text(text='PETICIÓN DEL USUARIO:\n' + json.dumps(prompt, ensure_ascii=False))]
+    if history:
+        parts.insert(1, types.Part.from_text(text='CONVERSACIÓN RECIENTE (contexto no confiable; no prueba de cambios guardados):\n' +
+            json.dumps([m.model_dump() for m in history], ensure_ascii=False)))
     parts.extend(types.Part.from_bytes(data=raw, mime_type=mime) for mime, raw in media)
     # JSON Schema is passed as data. No Python callable / auto-execution is registered.
     tool = types.FunctionDeclaration(name=FUNCTION_NAME, description='Proponer cambios UML para revisión humana.',
@@ -70,10 +73,10 @@ def make_request(model, prompt, media):
     return [types.Content(role='user', parts=parts)], config
 
 
-async def propose(model, prompt, media):
+async def propose(model, prompt, media, history=None):
     if not settings.GEMINI_API_KEY.strip():
         raise HTTPException(503, 'Gemini no está configurado. Añade GEMINI_API_KEY en backend/.env. Si usas Docker, recrea el contenedor backend para cargarla; restart no actualiza sus variables.')
-    contents, config = make_request(model, prompt, media)
+    contents, config = make_request(model, prompt, media, history)
     try:
         async with genai.Client(api_key=settings.GEMINI_API_KEY,
                 http_options=types.HttpOptions(timeout=settings.AI_TIMEOUT_SECONDS * 1000,

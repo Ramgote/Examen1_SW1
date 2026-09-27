@@ -115,7 +115,14 @@ def parse_xmi(raw: bytes):
     warnings = []
     extension = {}
     container_ids = set()
+    doc_elements = {}
+    for el in root.iter():
+        i = xattr(el, 'id')
+        if i: doc_elements[i] = el
+        ir = xattr(el, 'idref') or el.get('idref')
+        if ir: doc_elements[ir] = el
     ea_primitives = {}
+    ea_attribute_types = {}
     ea_positions = {}
     for ext in (e for e in elements if is_extension(e)
                 and not any(is_extension(parent) for parent in e.iterancestors())):
@@ -150,9 +157,26 @@ def parse_xmi(raw: bytes):
                                 ea_positions[item.get('subject')] = {'x': x, 'y': y}
                             except ValueError:
                                 warnings.append('Una posición de EA inválida se reemplazó por la cuadrícula.')
+                for elements_group in children(ext, 'elements'):
+                    for item in children(elements_group, 'element'):
+                        item_type = xattr(item, 'type') or item.get('type', '')
+                        props = children(item, 'properties')
+                        s_type = props[0].get('sType', '') if props else ''
+                        if item_type.endswith(('PrimitiveType', 'DataType')) or s_type in {'PrimitiveType', 'DataType'}:
+                            ref_id = xattr(item, 'idref') or item.get('idref') or xattr(item, 'id')
+                            pname = item.get('name', '').strip()
+                            if ref_id and pname:
+                                ea_primitives[ref_id] = ALIASES.get(pname, pname)
+                        for attrs_group in children(item, 'attributes'):
+                            for attr in children(attrs_group, 'attribute'):
+                                attr_id = xattr(attr, 'idref') or attr.get('idref') or xattr(attr, 'id')
+                                attr_props = children(attr, 'properties')
+                                if attr_id and attr_props and attr_props[0].get('type'):
+                                    tname = attr_props[0].get('type', '').strip()
+                                    ea_attribute_types[attr_id] = ALIASES.get(tname, tname)
                 for catalog in children(ext, 'primitivetypes'):
                     for primitive in semantic_elements(catalog):
-                        if kind(primitive) != 'PrimitiveType':
+                        if kind(primitive) not in {'PrimitiveType', 'DataType'}:
                             continue
                         pid = xattr(primitive, 'id')
                         if not pid:
@@ -161,12 +185,12 @@ def parse_xmi(raw: bytes):
                         name = ALIASES.get(name, name)
                         if pid in ea_primitives and ea_primitives[pid] != name:
                             raise XMIError(f'Declaraciones primitivas de EA incompatibles: {pid[:100]}')
-                        if pid in index and (kind(index[pid]) != 'PrimitiveType' or
+                        if pid in index and (kind(index[pid]) not in {'PrimitiveType', 'DataType'} or
                                 ALIASES.get(index[pid].get('name', '').strip(), index[pid].get('name', '').strip()) != name):
                             raise XMIError(f'El catálogo primitivo de EA contradice el modelo UML: {pid[:100]}')
                         ea_primitives[pid] = name
     model_elements = list(semantic_elements(model))
-    class_elements = [e for e in model_elements if kind(e) in {'Class', 'Interface', 'Enumeration'}
+    class_elements = [e for e in model_elements if kind(e) in {'Class', 'Interface', 'Enumeration', 'AssociationClass'}
                       and not any(kind(p) in {'ClassifierTemplateParameter', 'TemplateParameter'} for p in e.iterancestors())]
     if not class_elements:
         warnings.append('El modelo no contiene clases importables. Aplicarlo dejará el lienzo vacío.')
@@ -190,7 +214,8 @@ def parse_xmi(raw: bytes):
         meta = extension.get((category, xid))
         if meta is not None and meta.get('canvasId'):
             return meta.get('canvasId')
-        return 'x_' + hashlib.sha256(xid.encode()).hexdigest()[:32]
+        prefix = 'n_' if category == 'node' else 'e_'
+        return prefix + hashlib.sha256(xid.encode()).hexdigest()[:32]
 
     ids = {identifier(e): canvas_id(e, 'node') for e in class_elements}
     names = {}
@@ -233,6 +258,13 @@ def parse_xmi(raw: bytes):
                 fragment = href.rsplit('#', 1)[-1]
                 if '#' in href and fragment in builtins | set(ALIASES):
                     return ALIASES.get(fragment, fragment)
+                # EA 17 can write Real as UML UnlimitedNatural in the semantic
+                # section, while retaining Real in attribute metadata. Repair
+                # only this evidenced mismatch; UnlimitedNatural is not Real.
+                declared = ea_attribute_types.get(xattr(element, 'id'))
+                if href == 'http://schema.omg.org/spec/UML/2.1/uml.xml#UnlimitedNatural' and declared == 'Double':
+                    warnings.append(f"{element.getparent().get('name', '')}.{element.get('name', '')}: EA declara UnlimitedNatural en UML y Real/Double en sus metadatos; se importa como Double. Revisa el tipo en EA.")
+                    return 'Double'
                 raise XMIError('Referencia externa de tipo no soportada; no se descargan recursos externos')
         if ref in names:
             return names[ref]
@@ -242,13 +274,19 @@ def parse_xmi(raw: bytes):
             name = index[ref].get('name', '')
         elif ref in ea_primitives:
             name = ea_primitives[ref]
+        elif xattr(element, 'id') in ea_attribute_types:
+            name = ea_attribute_types[xattr(element, 'id')]
+        elif ref in doc_elements and doc_elements[ref].get('name'):
+            name = doc_elements[ref].get('name')
+        elif ref in index:
+            name = index[ref].get('name', '')
         else:
             name = ref or ''
         name = name.strip()
         name = ALIASES.get(name, name)
-        if name not in builtins and not (allow_void and name == 'void'):
-            raise XMIError(f'Tipo no soportado o referencia sin resolver: {name[:100]}')
-        return name
+        if name in builtins or (allow_void and name == 'void') or name in names.values() or name in set(template_names.values()):
+            return name
+        raise XMIError(f'Tipo no soportado o referencia sin resolver: {name[:100]}')
 
     visibility = {v: k for k, v in VISIBILITY.items()}
     def visible(element):
@@ -310,8 +348,9 @@ def parse_xmi(raw: bytes):
                 position = {'x': float(meta.get('x', '0')), 'y': float(meta.get('y', '0'))}
             except ValueError:
                 raise XMIError('Posición del lienzo inválida') from None
+        kind_map = {'Class': 'class', 'Interface': 'interface', 'Enumeration': 'enumeration', 'AssociationClass': 'class'}
         nodes.append(dict(id=ids[xid], position=position, data=dict(name=cls.get('name', ''),
-            package_name=packages[xid], kind={'Class': 'class', 'Interface': 'interface', 'Enumeration': 'enumeration'}[kind(cls)],
+            package_name=packages[xid], kind=kind_map.get(kind(cls), 'class'),
             literals=[lit.get('name', '') for lit in children(cls, 'ownedLiteral')],
             template_parameters=parameters_by_class[xid],
             is_abstract=boolean(cls.get('isAbstract')), attributes=attrs, methods=methods)))
@@ -321,8 +360,6 @@ def parse_xmi(raw: bytes):
                 raise XMIError('Superclase ausente o no soportada')
             edges.append(dict(id=canvas_id(general, 'edge'), source=ids[xid], target=ids[target], type='generalization'))
     for assoc in association_elements:
-        if kind(assoc) == 'AssociationClass' and any(children(assoc, field) for field in ('ownedAttribute', 'ownedOperation', 'generalization', 'ownedTemplateSignature')):
-            raise XMIError('Esta AssociationClass contiene atributos, operaciones o herencia propios: el perfil actual solo admite la relación sin esos miembros. No se importó para evitar pérdida de datos.')
         refs = assoc.get('memberEnd', '').split()
         if not refs:
             refs = [xattr(e, 'idref') for e in children(assoc, 'memberEnd')]
@@ -339,14 +376,17 @@ def parse_xmi(raw: bytes):
         relation = 'association_class' if kind(assoc) == 'AssociationClass' else 'association'
         if relation == 'association_class' and any(v != 'none' for v in aggregation):
             raise XMIError('AssociationClass con agregación no soportada')
-        if aggregation[0] != 'none':
-            ends.reverse(); aggregation.reverse()
         if aggregation[1] != 'none':
-            relation = 'composition' if aggregation[1] == 'composite' else 'aggregation'
-        edges.append(dict(id=canvas_id(assoc, 'edge'), source=ids[type_reference(ends[0])], target=ids[type_reference(ends[1])],
-            type=relation, source_cardinality=multiplicity(ends[0]), target_cardinality=multiplicity(ends[1]),
-            source_role=ends[0].get('name') or None, target_role=ends[1].get('name') or None,
-            relation_name=assoc.get('name') or None))
+            ends.reverse(); aggregation.reverse()
+        if aggregation[0] != 'none':
+            relation = 'composition' if aggregation[0] == 'composite' else 'aggregation'
+        source_end, target_end = ends[1], ends[0]
+        meta = extension.get(('edge', identifier(assoc)))
+        edges.append(dict(id=canvas_id(assoc, 'edge'), source=ids[type_reference(source_end)], target=ids[type_reference(target_end)],
+            type=relation, source_cardinality=multiplicity(source_end), target_cardinality=multiplicity(target_end),
+            source_role=source_end.get('name') or None, target_role=target_end.get('name') or None,
+            relation_name=meta.get('relationName') if meta is not None else assoc.get('name') or None,
+            association_node_id=ids[identifier(assoc)] if relation == 'association_class' else None))
     for dependency in (e for e in model_elements if kind(e) in {'Dependency', 'Realization', 'InterfaceRealization'}):
         source, target = reference(dependency, 'client'), reference(dependency, 'supplier')
         if kind(dependency) == 'InterfaceRealization':

@@ -98,9 +98,16 @@ def serialize_xmi(document: UMLCanvasDiagram) -> bytes:
                 child(binding, 'parameterSubstitution', kind='TemplateParameterSubstitution', id=f'{eid}_sub_{index}',
                       formal=f"tp_{edge['target']}_{index}", actual=actual)
         else:
-            assoc = child(model, 'packagedElement', kind='AssociationClass' if edge['type'] == 'association_class' else 'Association', id=eid,
-                          name=edge['relation_name'], memberEnd=f'{eid}_source {eid}_target')
-            for side in ('source', 'target'):
+            linked = edge.get('association_node_id') if edge['type'] == 'association_class' else None
+            if linked:
+                assoc = classes[linked]
+                eid = 'n_' + linked
+                assoc.set(tag(XMI, 'type'), 'uml:AssociationClass')
+                assoc.set('memberEnd', f'{eid}_target {eid}_source')
+            else:
+                assoc = child(model, 'packagedElement', kind='AssociationClass' if edge['type'] == 'association_class' else 'Association', id=eid,
+                              name=edge['relation_name'], memberEnd=f'{eid}_target {eid}_source')
+            for side in ('target', 'source'):
                 end = child(assoc, 'ownedEnd', kind='Property', id=f'{eid}_{side}',
                             type='n_' + edge[side], name=edge[side + '_role'], association=eid)
                 # UML aggregation belongs to the property typed by the PART.

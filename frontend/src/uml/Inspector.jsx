@@ -192,7 +192,7 @@ export function Inspector({
                             type: 'String',
                             visibility: '-',
                             is_pk: false,
-                            is_nullable: true,
+                            is_nullable: false,
                             is_unique: false,
                             is_static: false,
                             default_value: null,
@@ -537,6 +537,11 @@ export function Inspector({
                   options={nodes.map(n => ({ value: n.id, label: n.data.name }))}
                 />
               </div>
+
+              {edge.type === 'association_class' && (
+                <p>Clase vinculada: <strong>{nodes.find(n => n.id === edge.association_node_id)?.data.name || 'Se creará al editar esta relación'}</strong>.
+                  Selecciona su recuadro para editar nombre y atributos. La línea discontinua conserva el vínculo al moverla.</p>
+              )}
 
               {!['generalization', 'dependency'].includes(edge.type) && (
                 <div className="grid grid-cols-2 gap-2">

@@ -19,6 +19,8 @@ def affected_classes(before, after):
                 for item in (old.get(key), new.get(key)):
                     if item:
                         affected.update((item['source'], item['target']))
+                        if item.get('association_node_id'):
+                            affected.add(item['association_node_id'])
     return affected
 
 

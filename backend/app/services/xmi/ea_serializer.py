@@ -43,6 +43,17 @@ def serialize_ea_xmi(document, project_id: UUID, project_name='Diagrama de clase
                 element.set(key, id_map[value])
             elif key in {tag(XMI, 'idref'), 'type', 'general', 'client', 'supplier', 'association', 'memberEnd', 'ref', 'signature', 'formal', 'actual', 'parameteredElement'}:
                 element.set(key, ' '.join(id_map.get(ref, ref) for ref in value.split()))
+    # UML has one AssociationClass classifier, but EA's visual extension has
+    # separate element and connector identities, linked in both directions.
+    association_classes = {}
+    association_edges = {}
+    for edge in document.edges:
+        if edge.type.value == 'association_class':
+            classifier_id = id_map['n_' + edge.association_node_id] if edge.association_node_id else id_map['e_' + edge.id]
+            connector_id = guid('ea_connector_' + edge.id)
+            association_classes[classifier_id] = connector_id
+            association_edges[edge.id] = classifier_id
+            id_map['e_' + edge.id] = connector_id
     # Use the same nested references and repeated memberEnd representation as EA15.
     for element in list(model.iter()):
         ref = element.attrib.pop('type', None)
@@ -78,13 +89,17 @@ def serialize_ea_xmi(document, project_id: UUID, project_name='Diagrama de clase
     elements = etree.SubElement(ea, 'elements')
     for element in output.find(tag(EA_UML, 'Model')).iter('packagedElement'):
         kind = element.get(tag(EA_XMI, 'type'), '').split(':')[-1]
-        if kind not in {'Class', 'Interface', 'Enumeration', 'Package', 'PrimitiveType'}:
+        if kind not in {'Class', 'AssociationClass', 'Interface', 'Enumeration', 'Package', 'PrimitiveType'}:
             continue
+        visual_kind = 'Class' if kind == 'AssociationClass' else kind
         item = etree.SubElement(elements, 'element', {tag(EA_XMI, 'idref'): element.get(tag(EA_XMI, 'id')),
-            tag(EA_XMI, 'type'): 'uml:' + kind, 'name': element.get('name', ''), 'scope': 'public'})
+            tag(EA_XMI, 'type'): 'uml:' + visual_kind, 'name': element.get('name', ''), 'scope': 'public'})
         parent_id = element.getparent().get(tag(EA_XMI, 'id'), model_id)
         etree.SubElement(item, 'model', package=parent_id)
-        etree.SubElement(item, 'properties', sType=kind, isAbstract=element.get('isAbstract', 'false'))
+        properties = etree.SubElement(item, 'properties', sType=visual_kind, isAbstract=element.get('isAbstract', 'false'))
+        if kind == 'AssociationClass':
+            properties.set('nType', '17')
+            etree.SubElement(item, 'extendedProperties', conID=association_classes[element.get(tag(EA_XMI, 'id'))])
     connectors = etree.SubElement(ea, 'connectors')
     for edge in document.model_dump(mode='json')['edges']:
         connector = etree.SubElement(connectors, 'connector', {tag(EA_XMI, 'idref'): id_map['e_' + edge['id']]})
@@ -98,8 +113,11 @@ def serialize_ea_xmi(document, project_id: UUID, project_name='Diagrama de clase
             aggregation = ('composite' if edge['type'] == 'composition' else 'shared') if side == 'source' and edge['type'] in {'composition', 'aggregation'} else 'none'
             etree.SubElement(end, 'type', multiplicity=edge[side + '_cardinality'], aggregation=aggregation, containment='Unspecified')
         ea_type = {'generalization': 'Generalization', 'dependency': 'Dependency', 'realization': 'Realisation',
-                   'association_class': 'AssociationClass', 'template_binding': 'TemplateBinding'}.get(edge['type'], 'Association')
-        etree.SubElement(connector, 'properties', ea_type=ea_type, direction='Unspecified')
+                   'association_class': 'Association', 'template_binding': 'TemplateBinding'}.get(edge['type'], 'Association')
+        properties = etree.SubElement(connector, 'properties', ea_type=ea_type, direction='Unspecified')
+        if edge['id'] in association_edges:
+            properties.set('subtype', 'Class')
+            etree.SubElement(connector, 'extendedProperties', associationclass=association_edges[edge['id']])
         etree.SubElement(connector, 'appearance', linemode='3', linecolor='-1', linewidth='0')
     diagrams = etree.SubElement(ea, 'diagrams')
     diagram = etree.SubElement(diagrams, 'diagram', {tag(EA_XMI, 'id'): guid('class_diagram')})
@@ -120,6 +138,14 @@ def serialize_ea_xmi(document, project_id: UUID, project_name='Diagrama de clase
         etree.SubElement(objects, 'element', subject=id_map['n_' + node.id], seqno=str(order),
             geometry=f'Left={left};Top={top};Right={left + width};Bottom={top + height};')
     for edge in document.edges:
+        if edge.id in association_edges and not edge.association_node_id:
+            # Legacy documents can have the classifier only in the UML edge.
+            source = next(n for n in document.nodes if n.id == edge.source)
+            target = next(n for n in document.nodes if n.id == edge.target)
+            left = round((source.position.x + target.position.x) / 2 - min_x + 40)
+            top = round(max(source.position.y, target.position.y) - min_y + 220)
+            etree.SubElement(objects, 'element', subject=association_edges[edge.id],
+                geometry=f'Left={left};Top={top};Right={left + 260};Bottom={top + 100};')
         etree.SubElement(objects, 'element', subject=id_map['e_' + edge.id],
                          geometry='SX=0;SY=0;EX=0;EY=0;', style='Mode=3;Color=-1;LWidth=0;Hidden=0;')
     output.append(convert(extension))

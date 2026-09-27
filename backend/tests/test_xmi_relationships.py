@@ -32,7 +32,11 @@ class RelationshipXMITests(unittest.TestCase):
                     self.assertEqual(restored.edges[0].type.value, relation)
                     self.assertEqual(restored.edges[0].template_arguments, original.edges[0].template_arguments)
                     self.assertEqual(restored.edges[0].relation_name, 'Ejemplo')
-                    self.assertEqual(len(restored.nodes), 2)
+                    if relation == 'association_class':
+                        self.assertEqual(len(restored.nodes), 3)
+                        self.assertTrue(any(n.data.name == 'Ejemplo' for n in restored.nodes))
+                    else:
+                        self.assertEqual(len(restored.nodes), 2)
                     # Prove types come from UML, not just our canvas extension.
                     for ext in list(root):
                         if local(ext) == 'Extension': root.remove(ext)
@@ -57,11 +61,15 @@ class RelationshipXMITests(unittest.TestCase):
         raw = serialize_xmi(model()).replace(b'formal="tp_b_0"', b'formal="missing"')
         with self.assertRaisesRegex(XMIError, 'parámetro'): parse_xmi(raw)
 
-    def test_association_class_members_are_not_silently_dropped(self):
+    def test_association_class_members_are_imported_into_class_node(self):
         root = etree.fromstring(serialize_xmi(model('association_class')))
         assoc = next(e for e in root.iter() if kind(e) == 'AssociationClass')
         etree.SubElement(assoc, 'ownedOperation', {tag(XMI, 'id'): 'operation', 'name': 'calcular'})
-        with self.assertRaisesRegex(XMIError, 'pérdida'): parse_xmi(etree.tostring(root))
+        etree.SubElement(assoc, 'ownedAttribute', {tag(XMI, 'id'): 'attr_cant', 'name': 'cantidad', 'type': 'type_Integer'})
+        restored, _ = parse_xmi(etree.tostring(root))
+        assoc_node = next(n for n in restored.nodes if n.data.name == 'Ejemplo')
+        self.assertEqual([m.name for m in assoc_node.data.methods], ['calcular'])
+        self.assertEqual([a.name for a in assoc_node.data.attributes], ['cantidad'])
 
     def test_nested_interface_realization_is_imported(self):
         root = etree.fromstring(serialize_xmi(model('realization')))

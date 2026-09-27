@@ -74,7 +74,7 @@ class UMLAttribute(UMLModel):
     type: TypeName = 'String'
     visibility: UMLVisibility = UMLVisibility.PRIVATE
     is_pk: bool = False
-    is_nullable: bool = True
+    is_nullable: bool = False
     is_unique: bool = False
     is_static: bool = False
     default_value: str | None = Field(default=None, max_length=1000)
@@ -115,6 +115,7 @@ class UMLClassNode(UMLModel):
 
 
 class UMLEdge(UMLModel):
+    association_node_id: ElementId | None = None
     template_arguments: dict[Identifier, TypeName] = Field(default_factory=dict, max_length=20)
     source_handle: Literal['source-right', 'source-bottom'] | None = None
     target_handle: Literal['target-left', 'target-top'] | None = None
@@ -186,7 +187,20 @@ class UMLCanvasDiagram(UMLModel):
                 for parameter in method.parameters:
                     check_type(parameter.param_type, data)
         parents = {node_id: [] for node_id in classes}
+        association_nodes = set()
         for edge in self.edges:
+            if edge.type == UMLRelationshipType.ASSOCIATION_CLASS and edge.association_node_id is None:
+                matches = [n.id for n in self.nodes if n.data.name == edge.relation_name
+                           and n.id not in {edge.source, edge.target} and n.data.kind == 'class']
+                if len(matches) == 1:
+                    edge.association_node_id = matches[0]
+            if edge.association_node_id is not None:
+                linked = classes.get(edge.association_node_id)
+                if edge.type != UMLRelationshipType.ASSOCIATION_CLASS or linked is None or linked.kind != 'class':
+                    raise ValueError('La clase de asociación debe referenciar una clase existente')
+                if edge.association_node_id in {edge.source, edge.target} | association_nodes:
+                    raise ValueError('La clase de asociación debe ser distinta de los extremos y pertenecer a una sola asociación')
+                association_nodes.add(edge.association_node_id)
             if edge.template_arguments and edge.type != UMLRelationshipType.TEMPLATE_BINDING:
                 raise ValueError('Solo template binding puede contener sustituciones de parámetros')
             if edge.source not in classes or edge.target not in classes:

@@ -2,7 +2,7 @@ import { useState, useRef } from 'react'
 import { api } from '../api'
 import { relations } from './document'
 
-const BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+import { API_BASE as BASE } from '../apiBase'
 
 async function exchange(path, token, file) {
   const response = await fetch(`${BASE}/api/v1${path}`, {

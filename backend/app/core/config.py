@@ -39,7 +39,7 @@ class Settings(BaseSettings):
 
     # Proveedores de IA (Multimodalidad y Voice Assistant)
     GEMINI_API_KEY: str = Field(default="", repr=False)
-    GEMINI_MODEL: str = Field(default="gemini-2.5-flash", min_length=1, max_length=100, pattern=r'^gemini-[A-Za-z0-9.\-]+$')
+    GEMINI_MODEL: str = Field(default="gemini-3-flash-preview", min_length=1, max_length=100, pattern=r'^gemini-[A-Za-z0-9.\-]+$')
     GCP_LOCATION: str = Field(default="us-central1")
     AI_TIMEOUT_SECONDS: int = Field(default=60, ge=5, le=120)
     OPENAI_API_KEY: str = ""

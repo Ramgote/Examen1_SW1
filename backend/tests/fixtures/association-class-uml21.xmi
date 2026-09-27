@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Synthetic UML 2.1 fixture, not an export captured from EA. -->
+<xmi:XMI xmlns:xmi="http://schema.omg.org/spec/XMI/2.1" xmlns:uml="http://schema.omg.org/spec/UML/2.1" xmi:version="2.1">
+  <uml:Model xmi:id="model" name="Tienda">
+    <packagedElement xmi:type="uml:Class" xmi:id="pedido" name="Pedido">
+      <ownedAttribute xmi:id="pedido-productos" name="productos" association="detalle">
+        <type xmi:idref="producto"/>
+        <lowerValue xmi:type="uml:LiteralInteger" value="0"/>
+        <upperValue xmi:type="uml:LiteralUnlimitedNatural" value="-1"/>
+      </ownedAttribute>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Class" xmi:id="producto" name="Producto">
+      <ownedAttribute xmi:id="producto-pedidos" name="pedidos" association="detalle">
+        <type xmi:idref="pedido"/>
+        <lowerValue xmi:type="uml:LiteralInteger" value="1"/>
+        <upperValue xmi:type="uml:LiteralUnlimitedNatural" value="-1"/>
+      </ownedAttribute>
+    </packagedElement>
+    <packagedElement xmi:type="uml:AssociationClass" xmi:id="detalle" name="DetallePedido">
+      <ownedAttribute xmi:id="cantidad" name="cantidad" visibility="private" type="Integer"/>
+      <ownedAttribute xmi:id="precio" name="precioUnitario" visibility="private" type="Real"/>
+      <memberEnd xmi:idref="pedido-productos"/>
+      <memberEnd xmi:idref="producto-pedidos"/>
+    </packagedElement>
+  </uml:Model>
+</xmi:XMI>

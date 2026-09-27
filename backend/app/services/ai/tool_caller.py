@@ -353,10 +353,11 @@ def build_preview(original, proposal):
             nodes[item.id] = updated
         # Deleting a class also removes all its incident edges, shown in the diff.
         edges = {k: e for k, e in edges.items() if e['source'] in nodes and e['target'] in nodes
+                 and (not e.get('association_node_id') or e['association_node_id'] in nodes)
                  and k not in proposal.delete_edge_ids}
         for item in proposal.upsert_edges:
             updated = item.model_dump(mode='json')
-            for key in ('source_handle', 'target_handle', 'template_arguments'):
+            for key in ('source_handle', 'target_handle', 'template_arguments', 'association_node_id'):
                 if key not in item.model_fields_set and key in edges.get(item.id, {}):
                     updated[key] = edges[item.id][key]
             edges[item.id] = updated

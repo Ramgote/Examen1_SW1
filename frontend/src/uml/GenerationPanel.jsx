@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-const BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+import { API_BASE as BASE } from '../apiBase'
 
 export function GenerationPanel({ projectId, token, shared, exchangeBusy }) {
   const [target, setTarget] = useState('solution')

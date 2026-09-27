@@ -1,9 +1,17 @@
 import { useEffect, useRef, useState } from 'react'
 
-export function useVoiceRecorder(onFile, onError) {
+export function useVoiceRecorder(onFile, onError, visible = true) {
   const session = useRef(null)
   const alive = useRef(true)
   const [state, setState] = useState('idle')
+  useEffect(() => () => {
+    const active = session.current
+    if (!active) return
+    active.cancelled = true
+    clearTimeout(active.timer)
+    active.stream?.getTracks().forEach(track => track.stop())
+    if (active.recorder?.state === 'recording') active.recorder.stop()
+  }, [visible])
   useEffect(() => {
     alive.current = true
     return () => {
@@ -35,7 +43,12 @@ export function useVoiceRecorder(onFile, onError) {
     setState('requesting')
     try {
       active.stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      if (!alive.current || active.cancelled) { active.stream.getTracks().forEach(track => track.stop()); return }
+      if (!alive.current || active.cancelled) {
+        active.stream.getTracks().forEach(track => track.stop())
+        session.current = null
+        if (alive.current) setState('idle')
+        return
+      }
       active.recorder = new MediaRecorder(active.stream, { mimeType: mime })
       active.recorder.ondataavailable = event => {
         if (active.cancelled) return

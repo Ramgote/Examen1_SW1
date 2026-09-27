@@ -1,0 +1,24 @@
+{
+    default_sni {$PUBLIC_IP}
+}
+
+{$SITE_ADDRESS} {
+    tls {
+        issuer acme {
+            dir https://acme-v02.api.letsencrypt.org/directory
+            profile shortlived
+        }
+    }
+    encode gzip
+    request_body {
+        max_size 30MB
+    }
+    handle /api/* {
+        reverse_proxy backend:8000
+    }
+    handle {
+        root * /srv
+        try_files {path} /index.html
+        file_server
+    }
+}

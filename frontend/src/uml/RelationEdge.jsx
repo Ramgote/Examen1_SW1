@@ -1,8 +1,10 @@
-import { BaseEdge, getSmoothStepPath } from '@xyflow/react'
+import { BaseEdge, getSmoothStepPath, useNodes } from '@xyflow/react'
+import { associationNode, associationLink } from './associationClass.js'
 
 export function RelationEdge(props) {
   const { id, sourceX, sourceY, targetX, targetY, source, target, selected, data } = props
   let [path, labelX, labelY] = getSmoothStepPath(props)
+  const nodes = useNodes()
 
   if (source === target) {
     const top = Math.min(sourceY, targetY) - 130
@@ -28,6 +30,9 @@ export function RelationEdge(props) {
   const strokeWidth = selected ? 2.2 : 1.5
 
   const showCardinalities = !isGeneralization && !isRealization && !isDependency && !isTemplateBinding
+
+  const assocNode = isAssociationClass ? associationNode(nodes, data) : null
+  const assocLinePath = assocNode ? associationLink(assocNode, labelX, labelY) : null
 
   return (
     <>
@@ -84,6 +89,19 @@ export function RelationEdge(props) {
         )}
       </defs>
 
+      {/* Línea discontinua conectando al nodo de AssociationClass */}
+      {assocLinePath && (
+        <g className="uml-association-class-link pointer-events-none">
+          <path
+            d={assocLinePath}
+            stroke={strokeColor}
+            strokeWidth="1.4"
+            strokeDasharray="4 3"
+            fill="none"
+          />
+        </g>
+      )}
+
       <BaseEdge
         id={id}
         path={path}
@@ -102,7 +120,7 @@ export function RelationEdge(props) {
 
       {/* Textos, Estereotipos y Multiplicidades */}
       <g className="uml-edge-text font-mono text-[11px] select-none pointer-events-none">
-        {(data.relation_name || isTemplateBinding || isAssociationClass) && (
+        {!(isAssociationClass && assocNode) && (data.relation_name || isTemplateBinding || isAssociationClass) && (
           <text
             x={labelX}
             y={labelY - 8}

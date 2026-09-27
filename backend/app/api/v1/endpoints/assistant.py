@@ -52,7 +52,10 @@ async def preview(project_id: UUID, request: Request, response: Response,
         if snapshot.version != body.expected_version:
             raise HTTPException(409, 'El diagrama cambió. Sincroniza antes de consultar al asistente.')
         original = document(snapshot)
-        proposal = await gemini.propose(original, body.prompt, media)
+        if body.history:
+            proposal = await gemini.propose(original, body.prompt, media, history=body.history)
+        else:
+            proposal = await gemini.propose(original, body.prompt, media)
         # Recheck membership and version after the external wait; no writes or locks.
         db.expire_all()
         current = await db.get(User, user_id)

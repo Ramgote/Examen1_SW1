@@ -13,7 +13,7 @@ import { TopHeader } from './TopHeader'
 import { XmiPanel } from './XmiPanel'
 import { GenerationPanel } from './GenerationPanel'
 import { AssistantPanel } from './AssistantPanel'
-import { newClass, newRelation, relations, removeClass, serializeDiagram } from './document'
+import { newAssociationClass, newClass, newRelation, relations, removeClass, serializeDiagram } from './document'
 import { reloadDraft } from './saveStatus'
 import { arrangeReserved } from './layout'
 import './editor.css'
@@ -89,6 +89,31 @@ export function Editor({ project, user, token, onClose, onDirtyChange }) {
 
   async function addRelation(source, target, sourceHandle, targetHandle) {
     if (disabled || !await shared.reserve([source, target])) return
+    if (relationType === 'association_class') {
+      if (diagram.nodes.length >= 200) return
+      const sourceNode = diagram.nodes.find(n => n.id === source)
+      const targetNode = diagram.nodes.find(n => n.id === target)
+      const assocClass = newAssociationClass(diagram.nodes, sourceNode, targetNode)
+      if (!await shared.reserve([assocClass.id])) return
+
+      const edge = {
+        ...newRelation(source, target, relationType),
+        relation_name: assocClass.data.name,
+        association_node_id: assocClass.id,
+        source_handle: sourceHandle,
+        target_handle: targetHandle,
+        source_cardinality: '1..*',
+        target_cardinality: '1..*'
+      }
+
+      change(previous => ({
+        ...previous,
+        nodes: [...previous.nodes, assocClass],
+        edges: [...previous.edges, edge]
+      }))
+      setSelection({ kind: 'node', id: assocClass.id })
+      return
+    }
     const edge = { ...newRelation(source, target, relationType), source_handle: sourceHandle, target_handle: targetHandle }
     change(previous => ({ ...previous, edges: [...previous.edges, edge] }))
     setSelection({ kind: 'edge', id: edge.id })
@@ -350,6 +375,8 @@ export function Editor({ project, user, token, onClose, onDirtyChange }) {
               {/* Cuerpo del Drawer */}
                 <div className="p-3.5 overflow-y-auto flex-1 bg-surface-container-lowest">
                   <AssistantPanel
+                    key={project.id}
+                    visible={showAssistantDock || assistantBusy}
                     projectId={project.id}
                     token={token}
                     shared={shared}
@@ -380,12 +407,20 @@ export function Editor({ project, user, token, onClose, onDirtyChange }) {
           disabled={disabled || (node ? !owns(node.id) : edge ? !owns(edge.source) || !owns(edge.target) : true)}
           updateNode={data => change(previous => ({ ...previous, nodes: previous.nodes.map(n => (n.id === node.id ? { ...n, data } : n)) }))}
           updateEdge={async data => {
-            if (!await shared.reserve([...new Set([edge.source, edge.target, data.source, data.target])])) return
-            change(previous => ({ ...previous, edges: previous.edges.map(e => (e.id === edge.id ? data : e)) }))
+            let added = null
+            if (data.type === 'association_class' && !data.association_node_id) {
+              if (diagram.nodes.length >= 200) return
+              added = newAssociationClass(diagram.nodes, diagram.nodes.find(n => n.id === data.source), diagram.nodes.find(n => n.id === data.target))
+              data = { ...data, association_node_id: added.id }
+            } else if (data.type !== 'association_class') {
+              data = { ...data, association_node_id: null }
+            }
+            if (!await shared.reserve([...new Set([edge.source, edge.target, edge.association_node_id, data.source, data.target, data.association_node_id].filter(Boolean))])) return
+            change(previous => ({ ...previous, nodes: added ? [...previous.nodes, added] : previous.nodes, edges: previous.edges.map(e => (e.id === edge.id ? data : e)) }))
           }}
           onDelete={async () => {
             if (!window.confirm(node ? '¿Eliminar la clase y todas sus relaciones?' : '¿Eliminar esta relación?')) return
-            const ids = node ? [node.id, ...diagram.edges.filter(e => e.source === node.id || e.target === node.id).flatMap(e => [e.source, e.target])] : [edge.source, edge.target]
+            const ids = node ? [node.id, ...diagram.edges.filter(e => e.source === node.id || e.target === node.id || e.association_node_id === node.id).flatMap(e => [e.source, e.target, e.association_node_id].filter(Boolean))] : [edge.source, edge.target, edge.association_node_id].filter(Boolean)
             if (!await shared.reserve([...new Set(ids)])) return
             change(previous => (node ? removeClass(previous, node.id) : { ...previous, edges: previous.edges.filter(e => e.id !== edge.id) }))
             setSelection(null)
