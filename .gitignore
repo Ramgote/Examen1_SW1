@@ -38,6 +38,8 @@ pnpm-debug.log*
 # ==========================================
 # Python & Backend
 # ==========================================
+backend/tests/
+backend/test/
 __pycache__/
 *.py[cod]
 *$py.class

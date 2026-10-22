@@ -116,6 +116,37 @@ def transform(diagram: UMLCanvasDiagram):
         if e.type in {'generalization', 'dependency', 'realization', 'template_binding'}:
             continue
         source, target = classes[e.source], classes[e.target]
+        assoc_id = getattr(e, 'association_node_id', None)
+        if not assoc_id and getattr(e, 'relation_name', None):
+            for cid, cdata in classes.items():
+                if cdata['name'] == e.relation_name:
+                    assoc_id = cid
+                    break
+        e_type_val = getattr(e.type, 'value', e.type)
+        if e_type_val == 'association_class':
+            if not assoc_id or assoc_id not in classes or assoc_id in (e.source, e.target):
+                errors.append(f'Relación {e.id}: la clase de asociación debe referenciar una clase válida intermedia distinta de los extremos.')
+                continue
+            assoc = classes[assoc_id]
+            for other_node, role, suffix_key in ((source, e.source_role, '_s'), (target, e.target_role, '_t')):
+                suffix = hashlib.sha256((e.id + suffix_key).encode()).hexdigest()[:8]
+                rel_owner_name = role or other_node['name'][0].lower() + other_node['name'][1:] + 'Rel' + suffix
+                rel_inv_name = assoc['name'][0].lower() + assoc['name'][1:] + 'Rel' + suffix
+                if not re.fullmatch('[a-z][A-Za-z0-9]*', rel_owner_name) or rel_owner_name in RESERVED or rel_owner_name in {'entityVersion', 'list', 'get', 'create', 'update', 'delete', 'require', 'apply'}:
+                    errors.append(f'Relación {e.id}: rol {rel_owner_name} no válido en Java; usa camelCase.')
+                if not re.fullmatch('[a-z][A-Za-z0-9]*', rel_inv_name) or rel_inv_name in RESERVED or rel_inv_name in {'entityVersion', 'list', 'get', 'create', 'update', 'delete', 'require', 'apply'}:
+                    errors.append(f'Relación {e.id}: rol {rel_inv_name} no válido en Java; usa camelCase.')
+                rel_owner = {'name': rel_owner_name, 'cap': cap(rel_owner_name), 'other': other_node['name'],
+                             'other_pk': other_node['pk'], 'many': False, 'owner': True, 'min': 1, 'max': 1,
+                             'composition': False, 'join': 'r_' + suffix, 'column': 'fk_' + suffix, 'edge': e.id + suffix_key,
+                             'inverse': rel_inv_name, 'kind': 'ManyToOne'}
+                rel_inv = {'name': rel_inv_name, 'cap': cap(rel_inv_name), 'other': assoc['name'],
+                           'other_pk': assoc['pk'], 'many': True, 'owner': False, 'min': 0, 'max': None,
+                           'composition': False, 'join': 'r_' + suffix, 'column': 'fk_' + suffix, 'edge': e.id + suffix_key,
+                           'inverse': rel_owner_name, 'kind': 'OneToMany'}
+                assoc['rels'].append(rel_owner)
+                other_node['rels'].append(rel_inv)
+            continue
         slo, shi = bounds(e.source_cardinality)
         tlo, thi = bounds(e.target_cardinality)
         if shi == 0 or thi == 0:
