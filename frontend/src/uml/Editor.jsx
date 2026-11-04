@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { ReactFlow, Background, MiniMap, applyNodeChanges } from '@xyflow/react'
+import { ReactFlow, Background, MiniMap, applyNodeChanges, ConnectionMode } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import { useCollaboration } from './useCollaboration'
 import { ClassNode } from './ClassNode'
@@ -13,6 +13,7 @@ import { TopHeader } from './TopHeader'
 import { XmiPanel } from './XmiPanel'
 import { GenerationPanel } from './GenerationPanel'
 import { AssistantPanel } from './AssistantPanel'
+import { TeamChatPanel } from './TeamChatPanel'
 import { newAssociationClass, newClass, newRelation, relations, removeClass, serializeDiagram } from './document'
 import { reloadDraft } from './saveStatus'
 import { arrangeReserved } from './layout'
@@ -33,6 +34,8 @@ export function Editor({ project, user, token, onClose, onDirtyChange }) {
   const [showXmiModal, setShowXmiModal] = useState(false)
   const [showGenModal, setShowGenModal] = useState(false)
   const [showAssistantDock, setShowAssistantDock] = useState(false)
+  const [showTeamChat, setShowTeamChat] = useState(false)
+  const [showMiniMap, setShowMiniMap] = useState(true)
   const [assistantOpened, setAssistantOpened] = useState(false)
   const [showLegacyModal, setShowLegacyModal] = useState(false)
   const [activeHudMode, setActiveHudMode] = useState('select')
@@ -119,6 +122,29 @@ export function Editor({ project, user, token, onClose, onDirtyChange }) {
     setSelection({ kind: 'edge', id: edge.id })
   }
 
+  async function handleReconnect(oldEdge, newConnection) {
+    if (disabled) return
+    const { source, target, sourceHandle, targetHandle } = newConnection
+    if (!source || !target) return
+
+    if (!await shared.reserve([...new Set([source, target, oldEdge.source, oldEdge.target])])) return
+
+    change(previous => ({
+      ...previous,
+      edges: previous.edges.map(e => {
+        if (e.id !== oldEdge.id) return e
+        return {
+          ...e,
+          source,
+          target,
+          source_handle: sourceHandle || e.source_handle,
+          target_handle: targetHandle || e.target_handle
+        }
+      })
+    }))
+    setSelection({ kind: 'edge', id: oldEdge.id })
+  }
+
   async function handleAddClass(specialType) {
     if (disabled || !diagram || diagram.nodes.length >= 200) return
     const added = newClass(diagram.nodes, specialType === 'enum' ? 'enumeration' : specialType === 'interface' ? 'interface' : 'class')
@@ -164,6 +190,8 @@ export function Editor({ project, user, token, onClose, onDirtyChange }) {
         onOpenXmi={() => { setActiveTab('xmi'); setShowXmiModal(true) }}
         onOpenGeneration={() => { setActiveTab('generation'); setShowGenModal(true) }}
         onOpenAssistant={() => { setActiveTab('assistant'); setAssistantOpened(true); setShowAssistantDock(true) }}
+        onOpenTeamChat={() => setShowTeamChat(prev => !prev)}
+        showTeamChat={showTeamChat}
         onBack={back}
       />
 
@@ -203,10 +231,12 @@ export function Editor({ project, user, token, onClose, onDirtyChange }) {
             onZoomOut={() => instance.current?.zoomOut()}
             onZoomFit={() => instance.current?.fitView({ padding: 0.15 })}
             zoomLevel={zoomLevel}
+            showMiniMap={showMiniMap}
+            onToggleMiniMap={() => setShowMiniMap(prev => !prev)}
           />
 
           {(error || shared.blocked || dirty) && (
-            <div role={error || shared.blocked ? 'alert' : 'status'} className={`absolute top-14 left-4 right-4 z-30 p-2.5 border-l-4 rounded shadow-md text-xs font-mono flex flex-wrap gap-2 items-center justify-between ${error || shared.blocked ? 'bg-error-container text-on-error-container border-error' : 'bg-surface-container text-on-surface border-secondary'}`}>
+            <div role={error || shared.blocked ? 'alert' : 'status'} className={`absolute top-14 left-4 max-w-xl z-20 p-2.5 border-l-4 rounded shadow-md text-xs font-mono flex flex-wrap gap-2 items-center justify-between ${error || shared.blocked ? 'bg-error-container text-on-error-container border-error' : 'bg-surface-container text-on-surface border-secondary'}`}>
               <span>{error || (shared.blocked ? 'La sincronización está bloqueada. Conserva tu borrador antes de recargar.' : 'Hay cambios pendientes de confirmación del servidor.')}</span>
               <div className="flex items-center gap-3 shrink-0 ml-3">
                 <button type="button" onClick={downloadDraft} disabled={!diagram} className="underline font-bold text-xs disabled:opacity-40">Descargar borrador JSON</button>
@@ -234,12 +264,15 @@ export function Editor({ project, user, token, onClose, onDirtyChange }) {
                 type: 'uml_relation',
                 data: e,
                 selected: selection?.kind === 'edge' && selection.id === e.id,
+                reconnectable: !disabled,
               }))}
               nodeTypes={nodeTypes}
               edgeTypes={edgeTypes}
               nodesDraggable={!disabled && activeHudMode !== 'pan'}
               nodesConnectable={!disabled}
-              edgesReconnectable={false}
+              edgesReconnectable={!disabled}
+              onReconnect={handleReconnect}
+              connectionMode={ConnectionMode.Loose}
               deleteKeyCode={null}
               minZoom={0.1}
               maxZoom={4}
@@ -276,7 +309,24 @@ export function Editor({ project, user, token, onClose, onDirtyChange }) {
               }}
             >
               <Background gap={20} color="#cbd5e1" />
-              <MiniMap pannable zoomable />
+              {showMiniMap && (
+                <MiniMap
+                  position="top-right"
+                  pannable
+                  zoomable
+                  style={{
+                    top: 44,
+                    right: 16,
+                    width: 170,
+                    height: 110,
+                    borderRadius: 8,
+                    border: '1px solid #cbd5e1',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                    overflow: 'hidden',
+                    backgroundColor: '#f8fafc'
+                  }}
+                />
+              )}
             </ReactFlow>
           )}
 
@@ -386,7 +436,36 @@ export function Editor({ project, user, token, onClose, onDirtyChange }) {
                 </div>
             </div>
           )}
+
+          {/* Botón flotante para abrir Chat & Senior Dev (Esquina Inferior Derecha) */}
+          <button
+            type="button"
+            onClick={() => setShowTeamChat(!showTeamChat)}
+            className={`absolute bottom-4 right-4 z-20 flex items-center gap-2 px-3.5 py-2 rounded-full shadow-lg font-semibold text-xs transition-all ${
+              showTeamChat
+                ? 'bg-secondary text-on-secondary ring-2 ring-secondary/50'
+                : 'bg-primary text-on-primary hover:bg-primary/90 hover:scale-105'
+            }`}
+            title="Abrir Chat Colaborativo de Equipo y Mentoría Senior IA (@IA)"
+          >
+            <span className="material-symbols-outlined text-[18px]">psychology</span>
+            <span>Chat &amp; Senior Dev</span>
+          </button>
         </div>
+
+        {/* Panel Lateral: Chat Colaborativo y Mentor Senior IA */}
+        {showTeamChat && (
+          <aside className="w-96 flex-shrink-0 flex flex-col h-full z-20 shadow-xl border-l border-outline-variant/60 bg-surface-container-lowest">
+            <TeamChatPanel
+              projectId={project.id}
+              token={token}
+              user={user}
+              shared={shared}
+              selection={node ? { kind: 'node', id: node.id, name: node.data?.name } : edge ? { kind: 'edge', id: edge.id, name: edge.relation_name || edge.type } : null}
+              onClose={() => setShowTeamChat(false)}
+            />
+          </aside>
+        )}
 
         {/* Panel Lateral Derecho: Inspector de Propiedades + Colaboración en Vivo */}
         <Inspector

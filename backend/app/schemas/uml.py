@@ -117,8 +117,14 @@ class UMLClassNode(UMLModel):
 class UMLEdge(UMLModel):
     association_node_id: ElementId | None = None
     template_arguments: dict[Identifier, TypeName] = Field(default_factory=dict, max_length=20)
-    source_handle: Literal['source-right', 'source-bottom'] | None = None
-    target_handle: Literal['target-left', 'target-top'] | None = None
+    source_handle: Literal[
+        'source-right', 'source-bottom', 'source-left', 'source-top',
+        'target-left', 'target-top', 'target-right', 'target-bottom'
+    ] | None = None
+    target_handle: Literal[
+        'target-left', 'target-top', 'target-right', 'target-bottom',
+        'source-right', 'source-bottom', 'source-left', 'source-top'
+    ] | None = None
     id: ElementId
     source: ElementId
     target: ElementId

@@ -7,6 +7,7 @@ from app.api.v1.endpoints.ws import router as ws_router
 from app.api.v1.endpoints.xmi import router as xmi_router
 from app.api.v1.endpoints.generation import router as generation_router
 from app.api.v1.endpoints.assistant import router as assistant_router
+from app.api.v1.endpoints.chat import router as chat_router
 
 api_router = APIRouter()
 api_router.include_router(health_router)
@@ -17,3 +18,4 @@ api_router.include_router(ws_router)
 api_router.include_router(xmi_router)
 api_router.include_router(generation_router)
 api_router.include_router(assistant_router)
+api_router.include_router(chat_router)

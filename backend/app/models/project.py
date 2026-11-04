@@ -9,6 +9,7 @@ from app.core.database import Base
 if TYPE_CHECKING:
     from app.models.user import User
     from app.models.canvas import CanvasSnapshot
+    from app.models.chat import ChatMessage, HelpRequest, ModeratorSettings
 
 
 class Project(Base):
@@ -56,6 +57,22 @@ class Project(Base):
     )
     canvas_snapshot: Mapped["CanvasSnapshot"] = relationship(
         "CanvasSnapshot",
+        back_populates="project",
+        uselist=False,
+        cascade="all, delete-orphan"
+    )
+    messages: Mapped[List["ChatMessage"]] = relationship(
+        "ChatMessage",
+        back_populates="project",
+        cascade="all, delete-orphan"
+    )
+    help_requests: Mapped[List["HelpRequest"]] = relationship(
+        "HelpRequest",
+        back_populates="project",
+        cascade="all, delete-orphan"
+    )
+    moderator_settings: Mapped["ModeratorSettings"] = relationship(
+        "ModeratorSettings",
         back_populates="project",
         uselist=False,
         cascade="all, delete-orphan"

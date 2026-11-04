@@ -1,4 +1,4 @@
-import { API_BASE as BASE } from './apiBase'
+import { API_BASE as BASE } from './apiBase.js'
 
 export async function api(path, { token, method = 'GET', body, sessionId } = {}) {
   const response = await fetch(`${BASE}/api/v1${path}`, {

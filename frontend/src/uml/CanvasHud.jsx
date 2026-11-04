@@ -10,6 +10,8 @@ export function CanvasHud({
   onZoomOut,
   onZoomFit,
   zoomLevel = 100,
+  showMiniMap = true,
+  onToggleMiniMap,
 }) {
   return (
     <>
@@ -95,8 +97,8 @@ export function CanvasHud({
         </button>
       </div>
 
-      {/* Floating Zoom Controls (Bottom-Right) */}
-      <div className="absolute bottom-4 right-4 z-30 flex items-center gap-1 p-1 bg-surface-container-lowest/95 backdrop-blur shadow-md rounded-xl border border-outline-variant/60 select-none">
+      {/* Floating Zoom & Canvas Controls (Top-Right, junto al Minimap) */}
+      <div className="absolute top-3 right-4 z-30 flex items-center gap-1 p-1 bg-surface-container-lowest/95 backdrop-blur shadow-md rounded-xl border border-outline-variant/60 select-none">
         <button
           type="button"
           onClick={onZoomOut}
@@ -121,10 +123,27 @@ export function CanvasHud({
           type="button"
           onClick={onZoomFit}
           className="w-6 h-6 flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container rounded transition-colors"
-          title="Ajustar diagrama a pantalla"
+          title="Ajustar diagrama a pantalla completa / 100%"
         >
           <span className="material-symbols-outlined text-[15px]">fullscreen</span>
         </button>
+        {onToggleMiniMap && (
+          <>
+            <div className="w-px h-4 bg-outline-variant/50 mx-0.5"></div>
+            <button
+              type="button"
+              onClick={onToggleMiniMap}
+              className={`w-6 h-6 flex items-center justify-center rounded transition-colors ${
+                showMiniMap
+                  ? 'text-secondary hover:bg-surface-container'
+                  : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container'
+              }`}
+              title={showMiniMap ? 'Ocultar / Minimizar minimapa' : 'Mostrar minimapa'}
+            >
+              <span className="material-symbols-outlined text-[15px]">{showMiniMap ? 'map' : 'explore'}</span>
+            </button>
+          </>
+        )}
       </div>
     </>
   )

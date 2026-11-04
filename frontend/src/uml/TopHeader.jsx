@@ -15,6 +15,8 @@ export function TopHeader({
   onOpenXmi,
   onOpenGeneration,
   onOpenAssistant,
+  onOpenTeamChat,
+  showTeamChat = false,
   onBack,
 }) {
   const readOnly = shared.role === 'VIEWER'
@@ -133,6 +135,17 @@ export function TopHeader({
             >
               <span className="material-symbols-outlined text-[15px] text-secondary">smart_toy</span>
               <span>Asistente IA</span>
+            </button>
+            <button
+              type="button"
+              className={`px-3 py-1 rounded transition-colors text-xs font-medium flex items-center gap-1.5 ${
+                showTeamChat ? 'bg-primary text-on-primary shadow-xs font-semibold' : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low'
+              }`}
+              onClick={onOpenTeamChat}
+              title="Abrir Chat Colaborativo de Equipo y Mentoría Senior IA (@IA)"
+            >
+              <span className="material-symbols-outlined text-[15px]">psychology</span>
+              <span>Chat &amp; Senior Dev</span>
             </button>
           </nav>
 

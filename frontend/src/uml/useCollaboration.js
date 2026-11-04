@@ -18,5 +18,6 @@ export function useCollaboration(project, token) {
     reserve: ids => client.current?.reservationRequest('reserve', ids),
     finish: () => client.current?.finish(),
     acceptSaved: document => client.current?.receive({ type: 'snapshot', document, role: client.current.role, op_id: null }),
+    subscribe: listener => client.current?.subscribe(listener),
     save: () => client.current?.flush(), reload: () => client.current?.reload() }
 }
