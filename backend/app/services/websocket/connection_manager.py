@@ -182,6 +182,15 @@ class ConnectionManager:
                 self.reservations.release(peer.project_id, peer.id)
             await peer.send({'type': 'pong'})
 
+    async def broadcast(self, project_id: UUID, message: dict):
+        room = self.rooms.get(project_id, set())
+        if not room:
+            return
+        async def deliver(peer):
+            if not await peer.send(message):
+                room.discard(peer)
+        await asyncio.gather(*(deliver(peer) for peer in list(room)), return_exceptions=True)
+
     async def poll(self):
         while True:
             await asyncio.sleep(2)

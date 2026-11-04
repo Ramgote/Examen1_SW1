@@ -23,34 +23,69 @@ export function ClassNode({ data, selected, isConnectable }) {
         lineClassName="!border-[#0051d5]/60"
       />
 
-      {/* Handles de Conexión en los 4 extremos */}
-      <Handle
-        type="target"
-        position={Position.Left}
-        id="target-left"
-        isConnectable={isConnectable}
-        className="!w-2 !h-2 !bg-secondary !border-0 !rounded-xs !-left-1"
-      />
-      <Handle
-        type="source"
-        position={Position.Right}
-        id="source-right"
-        isConnectable={isConnectable}
-        className="!w-2 !h-2 !bg-secondary !border-0 !rounded-xs !-right-1"
-      />
+      {/* Handles de Conexión en los 4 extremos (Top, Right, Bottom, Left) */}
+      {/* Superior (Top) */}
       <Handle
         type="target"
         position={Position.Top}
         id="target-top"
         isConnectable={isConnectable}
-        className="!w-2 !h-2 !bg-secondary !border-0 !rounded-xs !-top-1 opacity-0 group-hover:opacity-100 transition-opacity"
+        className="!w-2.5 !h-2.5 !bg-secondary !border-2 !border-white !rounded-full !-top-1.5 opacity-70 group-hover:opacity-100 hover:!scale-125 transition-all z-30 cursor-crosshair"
       />
+      <Handle
+        type="source"
+        position={Position.Top}
+        id="source-top"
+        isConnectable={isConnectable}
+        className="!w-2.5 !h-2.5 !bg-secondary !border-2 !border-white !rounded-full !-top-1.5 opacity-70 group-hover:opacity-100 hover:!scale-125 transition-all z-30 cursor-crosshair"
+      />
+
+      {/* Derecho (Right) */}
+      <Handle
+        type="source"
+        position={Position.Right}
+        id="source-right"
+        isConnectable={isConnectable}
+        className="!w-2.5 !h-2.5 !bg-secondary !border-2 !border-white !rounded-full !-right-1.5 opacity-70 group-hover:opacity-100 hover:!scale-125 transition-all z-30 cursor-crosshair"
+      />
+      <Handle
+        type="target"
+        position={Position.Right}
+        id="target-right"
+        isConnectable={isConnectable}
+        className="!w-2.5 !h-2.5 !bg-secondary !border-2 !border-white !rounded-full !-right-1.5 opacity-70 group-hover:opacity-100 hover:!scale-125 transition-all z-30 cursor-crosshair"
+      />
+
+      {/* Inferior (Bottom) */}
       <Handle
         type="source"
         position={Position.Bottom}
         id="source-bottom"
         isConnectable={isConnectable}
-        className="!w-2 !h-2 !bg-secondary !border-0 !rounded-xs !-bottom-1 opacity-0 group-hover:opacity-100 transition-opacity"
+        className="!w-2.5 !h-2.5 !bg-secondary !border-2 !border-white !rounded-full !-bottom-1.5 opacity-70 group-hover:opacity-100 hover:!scale-125 transition-all z-30 cursor-crosshair"
+      />
+      <Handle
+        type="target"
+        position={Position.Bottom}
+        id="target-bottom"
+        isConnectable={isConnectable}
+        className="!w-2.5 !h-2.5 !bg-secondary !border-2 !border-white !rounded-full !-bottom-1.5 opacity-70 group-hover:opacity-100 hover:!scale-125 transition-all z-30 cursor-crosshair"
+      />
+
+      {/* Izquierdo (Left) */}
+      <Handle
+        type="target"
+        position={Position.Left}
+        id="target-left"
+        isConnectable={isConnectable}
+        className="!w-2.5 !h-2.5 !bg-secondary !border-2 !border-white !rounded-full !-left-1.5 opacity-70 group-hover:opacity-100 hover:!scale-125 transition-all z-30 cursor-crosshair"
+      />
+      <Handle
+        type="source"
+        position={Position.Left}
+        id="source-left"
+        isConnectable={isConnectable}
+        className="!w-2.5 !h-2.5 !bg-secondary !border-2 !border-white !rounded-full !-left-1.5 opacity-70 group-hover:opacity-100 hover:!scale-125 transition-all z-30 cursor-crosshair"
       />
 
       {/* Pill de Reserva / Bloqueo Exclusivo (RF-27) */}

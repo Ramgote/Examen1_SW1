@@ -86,7 +86,18 @@ export class CollaborationClient {
     }
   }
 
+  subscribe(listener) {
+    if (!this.listeners) this.listeners = new Set()
+    this.listeners.add(listener)
+    return () => this.listeners.delete(listener)
+  }
+
   receive(message) {
+    if (this.listeners && this.listeners.size > 0) {
+      for (const listener of this.listeners) {
+        try { listener(message) } catch (err) { console.error('collaboration listener error', err) }
+      }
+    }
     if (message.type === 'pong') { this.lastPong = Date.now(); return }
     if (message.type === 'presence') {
       this.participants = message.participants; this.role = message.role

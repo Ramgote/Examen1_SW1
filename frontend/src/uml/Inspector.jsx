@@ -538,6 +538,39 @@ export function Inspector({
                 />
               </div>
 
+              <div className="grid grid-cols-2 gap-2">
+                <CompactSelect
+                  label="Lado Origen"
+                  value={edge.source_handle || 'source-right'}
+                  onChange={val => updateEdge({ ...edge, source_handle: val })}
+                  options={[
+                    { value: 'source-top', label: 'Arriba' },
+                    { value: 'source-right', label: 'Derecha' },
+                    { value: 'source-bottom', label: 'Abajo' },
+                    { value: 'source-left', label: 'Izquierda' },
+                    { value: 'target-top', label: 'Arriba (Inverso)' },
+                    { value: 'target-right', label: 'Derecha (Inverso)' },
+                    { value: 'target-bottom', label: 'Abajo (Inverso)' },
+                    { value: 'target-left', label: 'Izquierda (Inverso)' },
+                  ]}
+                />
+                <CompactSelect
+                  label="Lado Destino"
+                  value={edge.target_handle || 'target-left'}
+                  onChange={val => updateEdge({ ...edge, target_handle: val })}
+                  options={[
+                    { value: 'target-top', label: 'Arriba' },
+                    { value: 'target-right', label: 'Derecha' },
+                    { value: 'target-bottom', label: 'Abajo' },
+                    { value: 'target-left', label: 'Izquierda' },
+                    { value: 'source-top', label: 'Arriba (Inverso)' },
+                    { value: 'source-right', label: 'Derecha (Inverso)' },
+                    { value: 'source-bottom', label: 'Abajo (Inverso)' },
+                    { value: 'source-left', label: 'Izquierda (Inverso)' },
+                  ]}
+                />
+              </div>
+
               {edge.type === 'association_class' && (
                 <p>Clase vinculada: <strong>{nodes.find(n => n.id === edge.association_node_id)?.data.name || 'Se creará al editar esta relación'}</strong>.
                   Selecciona su recuadro para editar nombre y atributos. La línea discontinua conserva el vínculo al moverla.</p>
