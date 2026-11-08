@@ -256,29 +256,121 @@ que iniciar sesión otra vez. Guarde el diagrama antes de cerrar o recargar.
 no coincide. Comprueba la revisión registrada, no audita toda la estructura SQL.
 Para comparar los modelos con la base ejecute `python -m alembic check` desde backend.
 
-### Alternativa Docker
+### Ejecución y Despliegue con Docker
 
-Prepare primero `backend/.env` con el script anterior. Con Docker Desktop en ejecución:
+Esta es la modalidad recomendada para crear y levantar la plataforma completa (Base de datos PostgreSQL, Migraciones automáticas de esquema, Backend FastAPI y Frontend React) sin necesidad de instalar dependencias de Python ni Node.js en la máquina anfitriona.
 
-```powershell
-docker compose --env-file backend/.env config --quiet
+#### 1. Requisitos previos
+- **Docker Desktop** instalado y en ejecución en Windows (con motor de contenedores Linux activo).
+- Archivo de configuración de variables `backend/.env`. Si aún no existe, genérelo a partir de la plantilla base:
+  ```powershell
+  # En PowerShell:
+  Copy-Item backend/.env.example backend/.env
+  ```
+  ```cmd
+  :: En CMD (Símbolo del sistema):
+  copy backend\.env.example backend\.env
+  ```
+
+#### 2. Líneas de comando para crear y levantar el proyecto
+
+Desde la raíz del repositorio (`Examen_1-SW1`), ejecute:
+
+```bash
 docker compose --env-file backend/.env up -d --build
-docker compose --env-file backend/.env ps -a
 ```
 
-Secuencia: PostgreSQL saludable → migración terminada → API saludable → frontend.
-Dentro de Docker se usa `db:5432`; desde Windows se usa el puerto publicado.
-Si PostgreSQL local ocupa 5432, para esta alternativa configure otro `POSTGRES_PORT`
-en `.env`, por ejemplo 5433. No ejecute simultáneamente ambas alternativas con los mismos puertos.
+> **Explicación detallada del comando y sus parámetros:**
+> - `docker compose`: Comando de orquestación que lee la arquitectura de servicios declarada en el archivo `docker-compose.yml`.
+> - `--env-file backend/.env`: Indica a Docker Compose que cargue de forma explícita las variables de entorno (claves de base de datos, puertos, credenciales de Gemini, etc.) alojadas en `backend/.env`.
+> - `up`: Ordena a Docker descargar las imágenes base necesarias, crear la red virtual interna (`default`), montar los volúmenes de almacenamiento e iniciar todos los servicios.
+> - `-d` (*detached mode* / modo desacoplado o en segundo plano): Ejecuta los contenedores en segundo plano y libera inmediatamente la terminal para continuar utilizándola.
+> - `--build`: Fuerza a Docker a compilar y construir las imágenes locales (`Dockerfile` del backend y `Dockerfile` del frontend) antes de iniciar los contenedores. Esto garantiza que cualquier cambio reciente en el código fuente, dependencias o plantillas quede incorporado en las imágenes.
 
-Las credenciales de un volumen PostgreSQL existente no cambian por editar `.env`.
-Conserve las credenciales originales o cambie la contraseña mediante PostgreSQL.
-`docker compose --env-file backend/.env down` detiene la alternativa Docker y conserva
-el volumen. No use `down -v` para reiniciar una instalación con datos que quiera conservar.
+#### 3. Secuencia de arranque orquestada (¿Qué sucede internamente?)
 
-Compose prepara desarrollo local, no un despliegue de producción. La imagen usa
-PostgreSQL 16; la instalación local encontrada es PostgreSQL 17. Las imágenes base
-mantienen tags de versión mayor y no están fijadas por digest.
+El archivo `docker-compose.yml` implementa una cadena de dependencias condicionales (`depends_on`) con chequeos de salud (*healthchecks*) para asegurar un arranque secuencial y libre de fallos de conexión:
+
+1. **`db` (PostgreSQL 16 Alpine):**
+   - Inicia el motor de la base de datos relacional.
+   - Aplica un chequeo de salud periódico (`pg_isready -U postgres -d uml_platform_db`).
+   - Mapea el puerto interno `5432` al puerto `5433` de la máquina anfitriona (`127.0.0.1:5433:5432`) para evitar colisiones con instancias de PostgreSQL que el usuario ya tenga instaladas localmente en el puerto 5432 estándar.
+   - Espera hasta alcanzar el estado `healthy` antes de dar paso a las migraciones.
+2. **`migrate` (Alembic / Migraciones de Base de Datos):**
+   - Inicia únicamente cuando `db` está saludable (`condition: service_healthy`).
+   - Ejecuta de forma automática `alembic upgrade head`, creando o actualizando todas las tablas del sistema (usuarios, proyectos, colaboradores, reservas y modelos UML).
+   - Al terminar satisfactoriamente (`condition: service_completed_successfully`), el contenedor finaliza su tarea y se detiene en estado exitoso `Exited (0)`.
+3. **`backend` (FastAPI + Python 3.14):**
+   - Arranca solo después de que las migraciones de `migrate` finalizaron exitosamente.
+   - Se expone en el puerto `8000` (`http://localhost:8000`).
+   - Ejecuta un healthcheck HTTP interno (`curl http://localhost:8000/api/v1/health/ready`). Cuando el endpoint responde 200 OK, el contenedor se marca en estado `healthy`.
+4. **`frontend` (React + Vite):**
+   - Arranca una vez que el `backend` se encuentra en estado `healthy`.
+   - Publica la aplicación web interactiva en el puerto `5173` (`http://localhost:5173`).
+   - Mapea el directorio `./frontend:/app` para permitir la actualización en caliente (*Hot Module Replacement* / HMR) mientras se programa.
+
+#### 4. Comandos de comprobación y monitoreo
+
+Una vez ejecutado el comando de arranque, verifique el estado del sistema:
+
+- **Listar el estado de los contenedores:**
+  ```bash
+  docker compose ps
+  ```
+  *Explicación:* Muestra los 4 servicios, sus puertos y su estado. Verá `db` y `backend` como `Up (healthy)`, `frontend` como `Up`, y `migrate` como `Exited (0)` (lo cual es normal y esperado, ya que su única labor era aplicar las migraciones).
+
+- **Visualizar registros (logs) en tiempo real:**
+  ```bash
+  # Ver los logs combinados de todos los contenedores en vivo:
+  docker compose logs -f
+
+  # Ver únicamente los logs del backend (útil para depurar peticiones a la API o interacciones con IA):
+  docker compose logs -f backend
+
+  # Ver únicamente los logs del frontend:
+  docker compose logs -f frontend
+  ```
+  *Explicación:* El parámetro `-f` (*follow*) mantiene el flujo de registros abierto en pantalla para observar las peticiones en vivo. Presione `Ctrl + C` para salir del visor.
+
+#### 5. Direcciones de acceso a los servicios
+
+| Servicio | Dirección / URL | Descripción |
+| --- | --- | --- |
+| **Frontend Web** | [http://localhost:5173](http://localhost:5173) | Interfaz gráfica del editor UML colaborativo, exportación XMI, generación Spring/Flutter y asistente IA |
+| **Backend API (Swagger Docs)** | [http://localhost:8000/docs](http://localhost:8000/docs) | Documentación interactiva OpenAPI con todos los endpoints REST listos para probar |
+| **Salud del Backend** | [http://localhost:8000/api/v1/health/ready](http://localhost:8000/api/v1/health/ready) | Endpoint que valida la disponibilidad de la API y la conexión activa con PostgreSQL (HTTP 200) |
+| **Base de Datos PostgreSQL** | `localhost:5433` (BD: `uml_platform_db`) | Conexión externa mediante herramientas como pgAdmin, DBeaver o IntelliJ con credenciales de `backend/.env` |
+
+#### 6. Comandos útiles para la gestión del ciclo de vida
+
+- **Pausar o detener temporalmente los contenedores (sin eliminar nada):**
+  ```bash
+  docker compose stop
+  ```
+  *Explicación:* Detiene la ejecución de los contenedores pero conserva intacto todo su estado. Para reanudarlos rápidamente ejecute `docker compose start`.
+
+- **Detener y retirar los contenedores (conservando la información):**
+  ```bash
+  docker compose --env-file backend/.env down
+  ```
+  *Explicación:* Detiene y elimina los contenedores y la red virtual de Docker, pero **preserva intacto el volumen persistente `postgres_data`**. Los usuarios registrados, proyectos y diagramas no se pierden.
+
+- **Reiniciar un servicio específico (ej. tras ajustes en el código):**
+  ```bash
+  docker compose restart backend
+  ```
+
+- **Recrear el backend tras modificar variables en `.env` (ej. `GEMINI_API_KEY`):**
+  ```bash
+  docker compose up -d --no-deps --force-recreate backend
+  ```
+  *Explicación:* Un `restart` simple conserva las variables de entorno previas del proceso; esta instrucción fuerza la recreación del contenedor del backend para que cargue los nuevos valores de `backend/.env` sin reiniciar los demás servicios.
+
+- **Eliminación completa y reinicio desde cero (¡Cuidado: borrado total de datos!):**
+  ```bash
+  docker compose down -v
+  ```
+  *Explicación:* La bandera `-v` (*volumes*) elimina el volumen `postgres_data`, borrando completamente la base de datos. Úselo solo si desea restablecer el entorno a un estado completamente en blanco.
 
 ### Correcciones de interfaz — 19/09/2026
 
