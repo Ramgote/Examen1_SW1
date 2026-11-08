@@ -39,3 +39,9 @@ class UMLProposal(UMLModel):
     delete_node_ids: list[ElementId] = Field(default_factory=list, max_length=200)
     upsert_edges: list[UMLEdge] = Field(default_factory=list, max_length=500, description='Relaciones completas nuevas o modificadas. Conservar IDs existentes.')
     delete_edge_ids: list[ElementId] = Field(default_factory=list, max_length=500)
+
+class HelpChatRequest(UMLModel):
+    question: str = Field(min_length=2, max_length=1500)
+
+class HelpChatResponse(UMLModel):
+    answer: str = Field(min_length=1, max_length=5000)

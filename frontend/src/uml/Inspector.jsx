@@ -66,7 +66,7 @@ export function Inspector({
   const classTypes = [...new Set(nodes.map(n => `${n.data.package_name}.${n.data.name}`))]
 
   return (
-    <aside className="w-80 bg-surface-container-lowest border-l border-outline-variant/60 flex flex-col h-full select-none z-30 shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
+    <aside data-help-target="inspector" className="w-80 bg-surface-container-lowest border-l border-outline-variant/60 flex flex-col h-full select-none z-30 shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
       {/* Header Superior: Inspector de Propiedades */}
       <div className="h-8 px-3 bg-surface-container-low flex items-center justify-between border-b border-outline-variant/40 flex-shrink-0">
         <span className="font-label-caps text-label-caps text-on-surface-variant tracking-wider">

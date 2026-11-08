@@ -31,7 +31,7 @@ export function PackageExplorer({
   }, {})
 
   return (
-    <aside className="w-72 bg-surface-container-lowest border-r border-outline-variant/60 flex flex-col h-full select-none z-30 shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
+    <aside data-help-target="explorer" className="w-72 bg-surface-container-lowest border-r border-outline-variant/60 flex flex-col h-full select-none z-30 shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
       {/* Sección Superior: Explorador de Paquetes */}
       <div className="h-8 px-3 bg-surface-container-low flex items-center justify-between border-b border-outline-variant/40 flex-shrink-0">
         <span className="font-label-caps text-label-caps text-on-surface-variant tracking-wider">
