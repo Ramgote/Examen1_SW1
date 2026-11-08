@@ -15,6 +15,7 @@ export function TopHeader({
   onOpenXmi,
   onOpenGeneration,
   onOpenAssistant,
+  onOpenHelp,
   onOpenTeamChat,
   showTeamChat = false,
   onBack,
@@ -75,7 +76,7 @@ export function TopHeader({
         {/* Nivel 2: Barra de Pestañas de Navegación y Acciones Rápidas */}
         <div className="h-11 px-4 flex items-center justify-between bg-surface-container-lowest text-on-surface border-b border-outline-variant/50 shadow-[0_1px_4px_rgba(0,0,0,0.05)]">
           {/* Pestañas de Navegación */}
-          <nav className="flex items-center gap-1 h-full">
+          <nav data-help-target="navigation" className="flex items-center gap-1 h-full">
             <button
               type="button"
               className="px-3 py-1 rounded transition-colors text-xs font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low flex items-center gap-1"
@@ -138,6 +139,16 @@ export function TopHeader({
             </button>
             <button
               type="button"
+              className="px-3 py-1 rounded transition-colors text-xs font-semibold flex items-center gap-1 bg-blue-50 text-blue-700 hover:bg-blue-100"
+              onClick={onOpenHelp}
+              title="Abrir guía de uso y recorrido interactivo"
+              data-help-target="help-entry"
+            >
+              <span className="material-symbols-outlined text-[15px]">school</span>
+              <span>Guía del sistema</span>
+            </button>
+            <button
+              type="button"
               className={`px-3 py-1 rounded transition-colors text-xs font-medium flex items-center gap-1.5 ${
                 showTeamChat ? 'bg-primary text-on-primary shadow-xs font-semibold' : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low'
               }`}
@@ -150,7 +161,7 @@ export function TopHeader({
           </nav>
 
           {/* Botones de Acción Rápida */}
-          <div className="flex items-center gap-1.5">
+          <div data-help-target="quick-actions" className="flex items-center gap-1.5">
             <button
               type="button"
               className="flex items-center gap-1 px-3 py-1 bg-surface-container-low hover:bg-surface-container-high text-on-surface border border-outline-variant/60 rounded transition-colors text-xs font-medium disabled:opacity-40 disabled:cursor-not-allowed"

@@ -14,6 +14,8 @@ import { XmiPanel } from './XmiPanel'
 import { GenerationPanel } from './GenerationPanel'
 import { AssistantPanel } from './AssistantPanel'
 import { TeamChatPanel } from './TeamChatPanel'
+import { HelpAssistant } from './HelpAssistant'
+import { GuidedTour } from './GuidedTour'
 import { newAssociationClass, newClass, newRelation, relations, removeClass, serializeDiagram } from './document'
 import { reloadDraft } from './saveStatus'
 import { arrangeReserved } from './layout'
@@ -37,6 +39,8 @@ export function Editor({ project, user, token, onClose, onDirtyChange }) {
   const [showTeamChat, setShowTeamChat] = useState(false)
   const [showMiniMap, setShowMiniMap] = useState(true)
   const [assistantOpened, setAssistantOpened] = useState(false)
+  const [helpOpen, setHelpOpen] = useState(false)
+  const [tourOpen, setTourOpen] = useState(false)
   const [showLegacyModal, setShowLegacyModal] = useState(false)
   const [activeHudMode, setActiveHudMode] = useState('select')
   const [snapGrid, setSnapGrid] = useState(16)
@@ -190,6 +194,7 @@ export function Editor({ project, user, token, onClose, onDirtyChange }) {
         onOpenXmi={() => { setActiveTab('xmi'); setShowXmiModal(true) }}
         onOpenGeneration={() => { setActiveTab('generation'); setShowGenModal(true) }}
         onOpenAssistant={() => { setActiveTab('assistant'); setAssistantOpened(true); setShowAssistantDock(true) }}
+        onOpenHelp={() => setHelpOpen(true)}
         onOpenTeamChat={() => setShowTeamChat(prev => !prev)}
         showTeamChat={showTeamChat}
         onBack={back}
@@ -212,6 +217,7 @@ export function Editor({ project, user, token, onClose, onDirtyChange }) {
         {/* Panel Central: Lienzo UML (Canvas) */}
         <div
           className="flex-1 h-full relative overflow-hidden bg-surface"
+          data-help-target="canvas"
           aria-label="Lienzo de clases UML"
           onMouseMove={e => {
             const bounds = e.currentTarget.getBoundingClientRect()
@@ -447,6 +453,7 @@ export function Editor({ project, user, token, onClose, onDirtyChange }) {
                 : 'bg-primary text-on-primary hover:bg-primary/90 hover:scale-105'
             }`}
             title="Abrir Chat Colaborativo de Equipo y Mentoría Senior IA (@IA)"
+            data-help-target="team-chat"
           >
             <span className="material-symbols-outlined text-[18px]">psychology</span>
             <span>Chat &amp; Senior Dev</span>
@@ -515,6 +522,14 @@ export function Editor({ project, user, token, onClose, onDirtyChange }) {
         zoomLevel={zoomLevel}
         generatorReady={!dirty && shared.ready && !shared.pending}
       />
+      <HelpAssistant
+        open={helpOpen}
+        projectId={project.id}
+        token={token}
+        onClose={() => setHelpOpen(false)}
+        onStartTour={() => { setHelpOpen(false); setTourOpen(true) }}
+      />
+      <GuidedTour open={tourOpen} onClose={() => setTourOpen(false)} />
     </section>
   )
 }

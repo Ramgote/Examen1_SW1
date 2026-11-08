@@ -56,18 +56,20 @@ export async function postChatMessage(projectId, token, content) {
   })
 }
 
+
 export async function postHelpRequest(projectId, token, { userPrompt, sourceMessageId = null, idempotencyKey = null }) {
   const key = idempotencyKey || generateIdempotencyKey()
   return await api(`/projects/${projectId}/help-requests`, {
     token,
     method: 'POST',
     body: {
-      user_prompt: userPrompt,
+      content: userPrompt,
       source_message_id: sourceMessageId,
       idempotency_key: key
     }
   })
 }
+
 
 export async function getHelpRequestStatus(projectId, token, helpRequestId) {
   return await api(`/projects/${projectId}/help-requests/${helpRequestId}`, { token })

@@ -16,7 +16,7 @@ export function CanvasHud({
   return (
     <>
       {/* HUD Superior Flotante */}
-      <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1 p-1 bg-surface-container-lowest/95 backdrop-blur shadow-md rounded-xl border border-outline-variant/60 select-none">
+      <div data-help-target="canvas-tools" className="absolute top-3 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1 p-1 bg-surface-container-lowest/95 backdrop-blur shadow-md rounded-xl border border-outline-variant/60 select-none">
         {/* Modos de Puntero */}
         <div className="flex items-center bg-surface-container-low p-0.5 rounded-lg">
           <button
